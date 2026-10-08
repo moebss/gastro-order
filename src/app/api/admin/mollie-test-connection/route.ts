@@ -3,7 +3,14 @@ import { ALL_RESTAURANTS } from "../../../../data/restaurants";
 
 export async function POST(req: NextRequest) {
   try {
-    const { apiKey, restaurantId } = await req.json();
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {
+      body = {};
+    }
+
+    const { apiKey, restaurantId } = body;
 
     const restaurant = ALL_RESTAURANTS.find(
       (r) => r.id === restaurantId || r.slug === restaurantId
@@ -39,10 +46,10 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
           success: true,
           mode: isLive ? "live" : "test",
-          organizationName: `${restaurant.name} (Verifiziert)`,
-          ibanMasked: "DE89 3705 •••• •••• 4820 11",
-          bankName: "Geschäftskonto (Verifiziert)",
-          payoutSchedule: "Täglich automatisch auf Firmen-IBAN",
+          organizationName: `${restaurant.name} (Demo-Betrieb)`,
+          ibanMasked: "DE00 DEMO 0000 0000 0000 00",
+          bankName: "Musterbank eG (Demo-Konto)",
+          payoutSchedule: "Täglich automatisch auf Firmen-IBAN (Demo)",
           methods: (methodsData._embedded?.methods || []).map((m: any) => ({
             id: m.id,
             name: m.description,
@@ -58,10 +65,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       mode: isLive ? "live" : "test",
-      organizationName: `${restaurant.name} Inh. M. Rossi`,
-      ibanMasked: "DE89 3705 •••• •••• 4820 11",
-      bankName: "Sparkasse KölnBonn (Geschäftskonto)",
-      payoutSchedule: "Täglich automatisch um 06:00 Uhr",
+      organizationName: `${restaurant.name} (Demo-Betrieb)`,
+      ibanMasked: "DE00 DEMO 0000 0000 0000 00",
+      bankName: "Musterbank eG (Fiktives Demo-Konto)",
+      payoutSchedule: "Täglich automatisch um 06:00 Uhr (Demo)",
       methods: [
         { id: "paypal", name: "PayPal", icon: "🅿️", status: "aktiv" },
         { id: "applepay", name: "Apple Pay & Google Pay", icon: "🍎", status: "aktiv" },
