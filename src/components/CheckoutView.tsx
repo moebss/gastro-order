@@ -692,6 +692,36 @@ export function CheckoutView({
                     )}
                   </div>
                 </button>
+
+                {paymentMethod === "online" && (
+                  <div className="p-3.5 bg-orange-50/50 rounded-xl border border-orange-200/80 text-xs space-y-2 animate-fadeIn">
+                    <div className="flex items-center justify-between text-[11px] text-stone-700">
+                      <span className="font-semibold text-stone-500">Zahlungsempfänger:</span>
+                      <span className="font-bold text-stone-900">{restaurant.name} (Direktzahlung)</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                      {[
+                        { label: "PayPal", icon: "🅿️" },
+                        { label: "Apple Pay & Google Pay", icon: "🍎" },
+                        { label: "Visa & Mastercard", icon: "💳" },
+                        { label: "SEPA Überweisung", icon: "🏦" },
+                        { label: "Wero", icon: "🇪🇺" },
+                      ].map((p, i) => (
+                        <span
+                          key={i}
+                          className="bg-white border border-stone-200 px-2 py-1 rounded-lg text-[10px] font-bold text-stone-800 flex items-center gap-1 shadow-2xs"
+                        >
+                          <span>{p.icon}</span>
+                          <span>{p.label}</span>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="text-[10px] text-stone-500 flex items-center gap-1 pt-0.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                      <span>Sichere 256-Bit SSL-Verschlüsselung via Mollie. Auszahlung direkt an das Restaurant.</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

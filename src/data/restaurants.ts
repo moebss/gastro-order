@@ -1,7 +1,10 @@
 import { Restaurant } from "../types/restaurant";
 import bellaNapoliData from "./demo-restaurant.json";
 
-export const RESTAURANT_BELLA_NAPOLI: Restaurant = bellaNapoliData as Restaurant;
+export const RESTAURANT_BELLA_NAPOLI: Restaurant = {
+  ...bellaNapoliData,
+  mollieApiKey: "test_bella_napoli_live_token_77a9",
+} as Restaurant;
 
 export const RESTAURANT_GOLDEN_WOK: Restaurant = {
   id: "rest_golden_wok_02",

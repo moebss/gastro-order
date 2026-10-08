@@ -93,6 +93,35 @@ export default function AdminPage() {
     currentRestaurant.mollieApiKey || ""
   );
   const [mollieKeySaved, setMollieKeySaved] = useState(false);
+  const [isTestingKey, setIsTestingKey] = useState(false);
+  const [testResult, setTestResult] = useState<any>(null);
+  const [testError, setTestError] = useState<string | null>(null);
+
+  const handleTestConnection = async () => {
+    setIsTestingKey(true);
+    setTestError(null);
+    setTestResult(null);
+    try {
+      const res = await fetch("/api/admin/mollie-test-connection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          apiKey: mollieKeyInput,
+          restaurantId: currentRestaurant.id,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTestResult(data);
+      } else {
+        setTestError(data.error || "Verbindungstest fehlgeschlagen.");
+      }
+    } catch (e: any) {
+      setTestError(e.message || "Netzwerkfehler.");
+    } finally {
+      setIsTestingKey(false);
+    }
+  };
 
   const handleSaveMollieKey = async () => {
     if (!currentUser) return;
@@ -1163,7 +1192,7 @@ export default function AdminPage() {
                   <label className="block text-xs font-bold text-stone-700 mb-1">
                     Mollie API-Schlüssel (beginnt mit live_ oder test_)
                   </label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <input
                       type="password"
                       placeholder="live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
@@ -1171,22 +1200,95 @@ export default function AdminPage() {
                       onChange={(e) => setMollieKeyInput(e.target.value)}
                       className="flex-1 px-3.5 py-2.5 rounded-xl border border-stone-200 text-xs font-mono bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-600"
                     />
-                    <button
-                      type="button"
-                      onClick={handleSaveMollieKey}
-                      className="bg-stone-900 hover:bg-black text-white font-bold px-5 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer"
-                    >
-                      {mollieKeySaved ? (
-                        <>
-                          <Check className="w-4 h-4 text-emerald-400" />
-                          <span>Gespeichert!</span>
-                        </>
-                      ) : (
-                        <span>Speichern</span>
-                      )}
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={isTestingKey}
+                        onClick={handleTestConnection}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs"
+                      >
+                        {isTestingKey ? (
+                          <span>Prüfe...</span>
+                        ) : (
+                          <>
+                            <span>⚡ Verbindung testen</span>
+                          </>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveMollieKey}
+                        className="bg-stone-900 hover:bg-black text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                      >
+                        {mollieKeySaved ? (
+                          <>
+                            <Check className="w-4 h-4 text-emerald-400" />
+                            <span>Gespeichert!</span>
+                          </>
+                        ) : (
+                          <span>Speichern</span>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
+
+                {/* Testergebnis Anzeige */}
+                {testResult && (
+                  <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 text-xs space-y-2.5 animate-fadeIn">
+                    <div className="flex items-center gap-2 text-emerald-900 font-black text-sm">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                      <span>Verbindung zu Mollie erfolgreich hergestellt!</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-emerald-900 bg-white/80 p-3 rounded-xl border border-emerald-200/80">
+                      <div>
+                        <span className="text-emerald-700 block font-semibold">Zahlungsempfänger:</span>
+                        <span className="font-bold">{testResult.organizationName}</span>
+                      </div>
+                      <div>
+                        <span className="text-emerald-700 block font-semibold">Auszahlungskonto (IBAN):</span>
+                        <span className="font-mono font-bold">{testResult.ibanMasked}</span>
+                      </div>
+                      <div>
+                        <span className="text-emerald-700 block font-semibold">Bank:</span>
+                        <span>{testResult.bankName}</span>
+                      </div>
+                      <div>
+                        <span className="text-emerald-700 block font-semibold">Auszahlungsplan:</span>
+                        <span className="font-semibold">{testResult.payoutSchedule}</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 block mb-1.5">
+                        Freigeschaltete Online-Zahlungsarten für Gäste:
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {(testResult.methods || []).map((m: any) => (
+                          <span
+                            key={m.id}
+                            className="bg-white text-emerald-900 font-bold px-2.5 py-1 rounded-lg border border-emerald-200 text-[10px] flex items-center gap-1 shadow-2xs"
+                          >
+                            <span>{m.icon || "✓"}</span>
+                            <span>{m.name}</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <p className="text-[11px] text-emerald-800 pt-1 leading-relaxed">
+                      💡 <strong>Finanzieller Ablauf:</strong> Wenn ein Gast auf deiner Website online bestellt, bucht Mollie den Betrag direkt auf dein Geschäftskonto. Die Plattform hat zu keinem Zeitpunkt Zugriff auf dein Geld.
+                    </p>
+                  </div>
+                )}
+
+                {testError && (
+                  <div className="p-3 bg-rose-50 rounded-xl border border-rose-200 text-rose-800 text-xs font-semibold flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                    <span>{testError}</span>
+                  </div>
+                )}
 
                 <div className="text-[11px] text-stone-500 space-y-1 pt-1 border-t border-stone-200/60">
                   <p className="font-semibold text-stone-700">So findest du deinen Schlüssel:</p>

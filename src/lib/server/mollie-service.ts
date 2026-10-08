@@ -48,7 +48,7 @@ export async function createMolliePayment(
   const webhookUrl = `${baseUrl}/api/webhooks/mollie`;
 
   // 1. Wenn ein echter Mollie API Key (test_... oder live_...) vorhanden ist:
-  if (mollieApiKey) {
+  if (mollieApiKey && process.env.NODE_ENV !== "test" && !mollieApiKey.includes("demo")) {
     try {
       const res = await fetch("https://api.mollie.com/v2/payments", {
         method: "POST",
@@ -129,7 +129,7 @@ export async function getMolliePayment(
 ): Promise<MolliePaymentData | null> {
   const mollieApiKey = process.env.MOLLIE_API_KEY;
 
-  if (mollieApiKey && !paymentId.startsWith("tr_test_")) {
+  if (mollieApiKey && process.env.NODE_ENV !== "test" && !paymentId.startsWith("tr_test_")) {
     try {
       const res = await fetch(`https://api.mollie.com/v2/payments/${paymentId}`, {
         headers: { Authorization: `Bearer ${mollieApiKey}` },
