@@ -58,11 +58,11 @@ export interface MenuItem {
 
 export interface Category {
   id: string;
-  restaurantId: string;
+  restaurantId?: string;
   name: string;
   description: string;
   order: number;
-  active: boolean;
+  active?: boolean;
 }
 
 export interface Restaurant {

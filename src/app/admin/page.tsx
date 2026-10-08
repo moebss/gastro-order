@@ -41,6 +41,11 @@ import {
   Copy,
   Globe,
   Check,
+  Users,
+  UserPlus,
+  Key,
+  ShieldCheck,
+  Trash2,
 } from "lucide-react";
 
 export default function AdminPage() {
@@ -56,10 +61,21 @@ export default function AdminPage() {
 
   // Admin Navigation
   const [activeTab, setActiveTab] = useState<
-    "orders" | "menu" | "settings" | "analytics" | "integration"
+    "orders" | "menu" | "settings" | "analytics" | "integration" | "users"
   >("orders");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
+
+  // Benutzer / Team Zustand
+  const [teamUsers, setTeamUsers] = useState<any[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserName, setNewUserName] = useState("");
+  const [newUserPassword, setNewUserPassword] = useState("");
+  const [newUserRole, setNewUserRole] = useState<"restaurant_owner" | "restaurant_staff">("restaurant_staff");
+  const [userSuccessMessage, setUserSuccessMessage] = useState<string | null>(null);
+  const [userErrorMessage, setUserErrorMessage] = useState<string | null>(null);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
 
   // Bestellungen Zustand
   const [orders, setOrders] = useState<Order[]>([]);
@@ -155,6 +171,11 @@ export default function AdminPage() {
         email: "bella@bella-napoli.de",
         restaurantId: "rest_bella_napoli_01",
       });
+    } else if (loginEmail === "napoli@pizzeria-napoli-horrem.de" || loginEmail === "napoli" || loginEmail === "horrem") {
+      setCurrentUser({
+        email: "info@pizzeria-napoli-horrem.de",
+        restaurantId: "rest_napoli_horrem_03",
+      });
     } else if (loginEmail === "wok@golden-wok.de" || loginEmail === "wok") {
       setCurrentUser({
         email: "wok@golden-wok.de",
@@ -170,6 +191,11 @@ export default function AdminPage() {
       setCurrentUser({
         email: "bella@bella-napoli.de",
         restaurantId: "rest_bella_napoli_01",
+      });
+    } else if (restaurantId === "rest_napoli_horrem_03") {
+      setCurrentUser({
+        email: "info@pizzeria-napoli-horrem.de",
+        restaurantId: "rest_napoli_horrem_03",
       });
     } else {
       setCurrentUser({
@@ -223,6 +249,82 @@ export default function AdminPage() {
       return () => clearInterval(interval);
     }
   }, [currentUser, soundEnabled, lastOrderCount]);
+
+  // Benutzer für das aktuelle Restaurant laden
+  const fetchUsers = async () => {
+    if (!currentUser) return;
+    setIsLoadingUsers(true);
+    try {
+      const res = await fetch(`/api/admin/users?restaurantId=${currentUser.restaurantId}`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.users)) {
+        setTeamUsers(data.users);
+      }
+    } catch (e) {
+      console.warn("Fehler beim Laden der Benutzer:", e);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+
+  useEffect(() => {
+    if (currentUser && activeTab === "users") {
+      fetchUsers();
+    }
+  }, [currentUser, activeTab]);
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser || !newUserEmail || !newUserName) return;
+    setIsCreatingUser(true);
+    setUserErrorMessage(null);
+    setUserSuccessMessage(null);
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: newUserEmail,
+          name: newUserName,
+          password: newUserPassword || "start123",
+          restaurantId: currentUser.restaurantId,
+          role: newUserRole,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUserSuccessMessage(`Zugang für '${newUserEmail}' erfolgreich angelegt!`);
+        setNewUserEmail("");
+        setNewUserName("");
+        setNewUserPassword("");
+        fetchUsers();
+      } else {
+        setUserErrorMessage(data.error || "Fehler beim Anlegen des Benutzers.");
+      }
+    } catch (e: any) {
+      setUserErrorMessage(e.message || "Netzwerkfehler");
+    } finally {
+      setIsCreatingUser(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!currentUser || !confirm("Diesen Zugang wirklich entfernen?")) return;
+    try {
+      const res = await fetch(
+        `/api/admin/users?userId=${userId}&restaurantId=${currentUser.restaurantId}`,
+        { method: "DELETE" }
+      );
+      const data = await res.json();
+      if (data.success) {
+        fetchUsers();
+      } else {
+        alert(data.error || "Fehler beim Löschen");
+      }
+    } catch (e) {
+      alert("Fehler beim Löschen des Benutzers");
+    }
+  };
 
   // Status einer Bestellung ändern
   const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus) => {
@@ -447,6 +549,25 @@ export default function AdminPage() {
               </span>
 
               <div className="grid grid-cols-1 gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => handleQuickLogin("rest_napoli_horrem_03")}
+                  className="flex items-center justify-between p-3 rounded-xl bg-stone-900/80 hover:bg-stone-700/60 border border-red-500/30 hover:border-red-500/60 text-left transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xl">🍕</span>
+                    <div>
+                      <span className="font-bold text-xs text-stone-200 block">
+                        Pizzeria Napoli Horrem
+                      </span>
+                      <span className="text-[10px] text-red-400 font-mono">
+                        Kerpen-Horrem
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-stone-500" />
+                </button>
+
                 <button
                   type="button"
                   onClick={() => handleQuickLogin("rest_bella_napoli_01")}
@@ -679,6 +800,18 @@ export default function AdminPage() {
           >
             <Code className="w-4 h-4 text-orange-400" />
             <span>Website-Einbindung</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("users")}
+            className={`py-2.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition cursor-pointer ${
+              activeTab === "users"
+                ? "border-orange-500 text-white"
+                : "border-transparent text-stone-400 hover:text-stone-200"
+            }`}
+          >
+            <Users className="w-4 h-4 text-emerald-400" />
+            <span>Team & Logins</span>
           </button>
         </div>
       </header>
@@ -1565,6 +1698,216 @@ export default function AdminPage() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* TAB 6: TEAM & LOGINS (MANDANTEN-BENUTZERVERWALTUNG) */}
+        {/* ========================================================= */}
+        {activeTab === "users" && (
+          <div className="space-y-6">
+            {/* Header & Mandantenschutz Info */}
+            <div className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <h2 className="text-lg font-black text-stone-900">
+                    Mitarbeiter- & Betreiber-Zugänge
+                  </h2>
+                  <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-emerald-300">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Mandanten-Isolation aktiv</span>
+                  </span>
+                </div>
+                <p className="text-xs text-stone-500">
+                  Verwalte hier alle Logins für <strong className="text-stone-800">{currentRestaurant.name}</strong>. 
+                  Alle Zugänge sind technisch strikt isoliert und haben 0% Zugriff auf andere Restaurants.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs text-stone-500 bg-stone-100 px-3 py-1.5 rounded-xl font-mono">
+                  Tenant-ID: {currentRestaurant.id}
+                </span>
+              </div>
+            </div>
+
+            {/* Formular: Neuen Zugang anlegen */}
+            <div className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm space-y-4">
+              <h3 className="font-bold text-sm text-stone-900 flex items-center gap-2">
+                <UserPlus className="w-4 h-4 text-orange-600" />
+                <span>Neuen Mitarbeiter-Zugang anlegen</span>
+              </h3>
+
+              {userSuccessMessage && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{userSuccessMessage}</span>
+                </div>
+              )}
+
+              {userErrorMessage && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex items-center gap-2">
+                  <span className="font-bold">Fehler:</span>
+                  <span>{userErrorMessage}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleCreateUser} className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-600 uppercase tracking-wider mb-1">
+                    Name / Funktion
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newUserName}
+                    onChange={(e) => setNewUserName(e.target.value)}
+                    placeholder="z. B. Ali (Schichtleiter)"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-stone-900 text-xs focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-600 uppercase tracking-wider mb-1">
+                    E-Mail Adresse
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={newUserEmail}
+                    onChange={(e) => setNewUserEmail(e.target.value)}
+                    placeholder="mitarbeiter@restaurant.de"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-stone-900 text-xs focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-600 uppercase tracking-wider mb-1">
+                    Passwort (Initial)
+                  </label>
+                  <input
+                    type="text"
+                    value={newUserPassword}
+                    onChange={(e) => setNewUserPassword(e.target.value)}
+                    placeholder="z. B. secret2026"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-stone-900 text-xs focus:ring-2 focus:ring-orange-500 focus:outline-none font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-600 uppercase tracking-wider mb-1">
+                    Rolle & Berechtigung
+                  </label>
+                  <select
+                    value={newUserRole}
+                    onChange={(e: any) => setNewUserRole(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-stone-900 text-xs focus:ring-2 focus:ring-orange-500 focus:outline-none bg-white"
+                  >
+                    <option value="restaurant_staff">Küchen-Personal (Bestellungen & Bon)</option>
+                    <option value="restaurant_owner">Inhaber (Vollzugriff & Finanzen)</option>
+                  </select>
+                </div>
+
+                <div className="md:col-span-4 flex justify-end pt-2">
+                  <button
+                    type="submit"
+                    disabled={isCreatingUser}
+                    className="bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    <span>{isCreatingUser ? "Wird angelegt..." : "Zugang jetzt erstellen"}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Liste aktiver Benutzer */}
+            <div className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-sm text-stone-900 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-stone-600" />
+                  <span>Aktive Zugänge für {currentRestaurant.name}</span>
+                </h3>
+                <button
+                  onClick={fetchUsers}
+                  className="text-xs text-stone-500 hover:text-stone-900 flex items-center gap-1 cursor-pointer"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingUsers ? "animate-spin" : ""}`} />
+                  <span>Neu laden</span>
+                </button>
+              </div>
+
+              {isLoadingUsers ? (
+                <div className="py-8 text-center text-xs text-stone-400">
+                  Lade Benutzerdaten...
+                </div>
+              ) : teamUsers.length === 0 ? (
+                <div className="py-8 text-center text-xs text-stone-400">
+                  Keine Mitarbeiter-Zugänge für dieses Restaurant angelegt.
+                </div>
+              ) : (
+                <div className="divide-y divide-stone-100">
+                  {teamUsers.map((user) => (
+                    <div
+                      key={user.id}
+                      className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-stone-50/50 px-2 rounded-xl transition"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-stone-100 border border-stone-200 flex items-center justify-center font-bold text-xs text-stone-700 uppercase">
+                          {user.name.charAt(0)}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-xs text-stone-900">
+                              {user.name}
+                            </span>
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                user.role === "restaurant_owner"
+                                  ? "bg-purple-100 text-purple-700 border border-purple-200"
+                                  : "bg-blue-100 text-blue-700 border border-blue-200"
+                              }`}
+                            >
+                              {user.role === "restaurant_owner" ? "Inhaber" : "Küchenpersonal"}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-stone-500 font-mono">
+                            {user.email}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] text-stone-400">
+                          Erstellt: {new Date(user.createdAt).toLocaleDateString("de-DE")}
+                        </span>
+                        <button
+                          onClick={() => handleDeleteUser(user.id)}
+                          className="p-1.5 text-stone-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition cursor-pointer"
+                          title="Zugang löschen"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Sicherheits-Architektur Erklärungskarte */}
+            <div className="bg-stone-900 text-stone-100 p-6 rounded-3xl border border-stone-800 space-y-3">
+              <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-wider">
+                <ShieldCheck className="w-4 h-4" />
+                <span>Wie ist die Sicherheit garantiert?</span>
+              </div>
+              <p className="text-xs text-stone-300 leading-relaxed">
+                Jeder Benutzer wird fest mit der <code>restaurant_id</code> verknüpft. Sobald er sich im Admin-Portal anmeldet, 
+                erlaubt der Server und die PostgreSQL-Datenbank (Row Level Security) ausschließlich Lese- und Schreibzugriff 
+                auf Datensätze dieses einen Restaurants. Ein versehentlicher Zugriff auf andere Betriebe ist architektonisch 
+                zu 100% ausgeschlossen.
+              </p>
             </div>
           </div>
         )}

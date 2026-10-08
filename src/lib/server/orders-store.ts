@@ -144,11 +144,7 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
  * Gibt alle Bestellungen für ein bestimmtes Restaurant zurück (für Admin)
  */
 export async function getOrdersForRestaurant(restaurantId: string): Promise<Order[]> {
-  const result: Order[] = [];
-  for (const o of ordersMemoryStore.values()) {
-    if (o.restaurantId === restaurantId) {
-      result.push(o);
-    }
-  }
+  const allOrders = Array.from(ordersMemoryStore.values());
+  const result = allOrders.filter((o) => o.restaurantId === restaurantId);
   return result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }

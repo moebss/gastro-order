@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Order } from "../../../types/restaurant";
 import { OrderSuccessView } from "../../../components/OrderSuccessView";
@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-export default function OrderStatusPage() {
+function OrderStatusContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const orderId = searchParams.get("orderId");
@@ -171,5 +171,19 @@ export default function OrderStatusPage() {
         Zur Startseite
       </Link>
     </div>
+  );
+}
+
+export default function OrderStatusPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
+          <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <OrderStatusContent />
+    </Suspense>
   );
 }

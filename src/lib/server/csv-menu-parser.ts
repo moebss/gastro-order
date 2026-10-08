@@ -68,9 +68,11 @@ export function parseMenuCsv(csvContent: string): ParsedMenuResult {
       const catSlug = rawCat.toLowerCase().replace(/[^a-z0-9]+/g, "_");
       cat = {
         id: `cat_${catSlug}_${categoryMap.size + 1}`,
+        restaurantId: "rest_custom",
         name: rawCat,
         description: `Ausgewählte Spezialitäten aus der Kategorie ${rawCat}`,
         order: catOrder++,
+        active: true,
       };
       categoryMap.set(rawCat, cat);
     }

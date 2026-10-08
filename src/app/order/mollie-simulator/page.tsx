@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { formatEuro } from "../../../lib/calculations";
 import {
@@ -15,7 +15,7 @@ import {
   Flame,
 } from "lucide-react";
 
-export default function MollieSimulatorPage() {
+function MollieSimulatorContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const paymentId = searchParams.get("paymentId");
@@ -175,5 +175,19 @@ export default function MollieSimulatorPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function MollieSimulatorPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-stone-100 flex items-center justify-center p-4">
+          <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <MollieSimulatorContent />
+    </Suspense>
   );
 }

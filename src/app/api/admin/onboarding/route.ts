@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Restaurant, DeliveryZone, OpeningHourDay } from "../../../../types/restaurant";
+import { Restaurant, DeliveryZone, OpeningHour } from "../../../../types/restaurant";
 import { ALL_RESTAURANTS } from "../../../../data/restaurants";
 import { ONBOARDING_TEMPLATES } from "../../../../lib/server/onboarding-templates";
 import { parseMenuCsv } from "../../../../lib/server/csv-menu-parser";
@@ -47,7 +47,7 @@ function generateSlug(name: string): string {
   return slug;
 }
 
-const DEFAULT_OPENING_HOURS: OpeningHourDay[] = [
+const DEFAULT_OPENING_HOURS: OpeningHour[] = [
   {
     day: 1,
     dayName: "Montag",
