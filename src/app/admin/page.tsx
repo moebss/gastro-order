@@ -37,6 +37,10 @@ import {
   Receipt,
   UtensilsCrossed,
   Plus,
+  Code,
+  Copy,
+  Globe,
+  Check,
 } from "lucide-react";
 
 export default function AdminPage() {
@@ -52,9 +56,10 @@ export default function AdminPage() {
 
   // Admin Navigation
   const [activeTab, setActiveTab] = useState<
-    "orders" | "menu" | "settings" | "analytics"
+    "orders" | "menu" | "settings" | "analytics" | "integration"
   >("orders");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
 
   // Bestellungen Zustand
   const [orders, setOrders] = useState<Order[]>([]);
@@ -606,6 +611,18 @@ export default function AdminPage() {
             <TrendingUp className="w-4 h-4" />
             <span>Auswertung & Umsatz</span>
           </button>
+
+          <button
+            onClick={() => setActiveTab("integration")}
+            className={`py-2.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition cursor-pointer ${
+              activeTab === "integration"
+                ? "border-orange-500 text-white"
+                : "border-transparent text-stone-400 hover:text-stone-200"
+            }`}
+          >
+            <Code className="w-4 h-4 text-orange-400" />
+            <span>Website-Einbindung</span>
+          </button>
         </div>
       </header>
 
@@ -1125,6 +1142,224 @@ export default function AdminPage() {
                 <p className="text-[11px] text-stone-500 mt-1">
                   Aktuell in der Zubereitung
                 </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* TAB 5: WEBSITE-EINBINDUNG & WIDGETS */}
+        {/* ========================================================= */}
+        {activeTab === "integration" && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-soft">
+              <div className="flex items-start justify-between gap-4 pb-6 border-b border-stone-100">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full border border-orange-200">
+                    Integration & Go-Live
+                  </span>
+                  <h2 className="text-xl font-black text-stone-900 mt-2">
+                    Wie Gäste auf deiner bestehenden Website bestellen
+                  </h2>
+                  <p className="text-xs text-stone-500 mt-1 max-w-2xl leading-relaxed">
+                    Du musst keine neue Website bauen. Integriere das Bestellsystem einfach in deine bestehende Website (WordPress, Wix, Jimdo, Squarespace, Webflow oder reines HTML).
+                  </p>
+                </div>
+
+                <div className="hidden sm:flex items-center gap-2">
+                  <a
+                    href={`/r/${currentRestaurant.slug}`}
+                    target="_blank"
+                    className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center gap-1.5 transition shadow-sm"
+                  >
+                    <span>Live-Karte testen</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              </div>
+
+              {/* Direkte URL */}
+              <div className="mt-6 p-4 bg-stone-50 rounded-2xl border border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">
+                    Deine direkte Gäste-Webadresse:
+                  </span>
+                  <span className="font-mono font-bold text-xs sm:text-sm text-stone-900 break-all">
+                    {typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}
+                    /r/{currentRestaurant.slug}
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    const url = `${window.location.origin}/r/${currentRestaurant.slug}`;
+                    navigator.clipboard.writeText(url);
+                    setCopiedSnippet("direct-url");
+                    setTimeout(() => setCopiedSnippet(null), 2500);
+                  }}
+                  className="bg-white hover:bg-stone-100 border border-stone-300 text-stone-700 font-bold px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                >
+                  {copiedSnippet === "direct-url" ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-emerald-700">Kopiert!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>URL kopieren</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Die 3 Integrations-Optionen */}
+              <div className="mt-8 space-y-6">
+                {/* OPTION 1: Floating Widget Button */}
+                <div className="p-5 rounded-2xl border border-stone-200 hover:border-orange-300 transition space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-xs">
+                        1
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-sm text-stone-900">
+                          Schwebender Bestellbutton (Empfohlen ⭐)
+                        </h3>
+                        <p className="text-[11px] text-stone-500">
+                          Fügt auf dem Smartphone unten rechts einen festen, pulsierenden Button „🛍️ Online bestellen“ ein.
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">
+                      Höchste Conversion
+                    </span>
+                  </div>
+
+                  <div className="relative">
+                    <pre className="bg-stone-900 text-stone-200 text-[11px] font-mono p-3.5 rounded-xl overflow-x-auto">
+{`<script
+  src="${typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}/embed.js"
+  data-restaurant="${currentRestaurant.slug}"
+  data-color="${currentRestaurant.accentColor || "#ea580c"}"
+  data-label="Online bestellen"
+  data-position="right">
+</script>`}
+                    </pre>
+                    <button
+                      onClick={() => {
+                        const origin = window.location.origin;
+                        const code = `<script src="${origin}/embed.js" data-restaurant="${currentRestaurant.slug}" data-color="${currentRestaurant.accentColor || "#ea580c"}" data-label="Online bestellen" data-position="right"></script>`;
+                        navigator.clipboard.writeText(code);
+                        setCopiedSnippet("widget");
+                        setTimeout(() => setCopiedSnippet(null), 2500);
+                      }}
+                      className="absolute top-2.5 right-2.5 bg-stone-800 hover:bg-stone-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg border border-stone-700 flex items-center gap-1.5 transition cursor-pointer"
+                    >
+                      {copiedSnippet === "widget" ? (
+                        <>
+                          <Check className="w-3 h-3 text-emerald-400" />
+                          <span className="text-emerald-400">Kopiert!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3" />
+                          <span>Code kopieren</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-stone-400">
+                    Einfach vor dem schließenden &lt;/body&gt;-Tag oder in die Einstellungen deiner Website (z. B. WordPress Header/Footer Plugin, Wix Custom Code) einfügen.
+                  </p>
+                </div>
+
+                {/* OPTION 2: iFrame Einbettung */}
+                <div className="p-5 rounded-2xl border border-stone-200 hover:border-orange-300 transition space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
+                        2
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-sm text-stone-900">
+                          Direkte iFrame-Einbettung in Unterseite
+                        </h3>
+                        <p className="text-[11px] text-stone-500">
+                          Bettet den kompletten Bestellablauf direkt auf z. B. <code className="bg-stone-100 px-1 py-0.5 rounded">mein-restaurant.de/speisekarte</code> ein.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    <pre className="bg-stone-900 text-stone-200 text-[11px] font-mono p-3.5 rounded-xl overflow-x-auto">
+{`<iframe
+  src="${typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}/r/${currentRestaurant.slug}"
+  width="100%"
+  height="900"
+  style="border:none;border-radius:16px;max-width:100%;"
+  allow="payment"
+  loading="lazy">
+</iframe>`}
+                    </pre>
+                    <button
+                      onClick={() => {
+                        const origin = window.location.origin;
+                        const code = `<iframe src="${origin}/r/${currentRestaurant.slug}" width="100%" height="900" style="border:none;border-radius:16px;max-width:100%;" allow="payment" loading="lazy"></iframe>`;
+                        navigator.clipboard.writeText(code);
+                        setCopiedSnippet("iframe");
+                        setTimeout(() => setCopiedSnippet(null), 2500);
+                      }}
+                      className="absolute top-2.5 right-2.5 bg-stone-800 hover:bg-stone-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg border border-stone-700 flex items-center gap-1.5 transition cursor-pointer"
+                    >
+                      {copiedSnippet === "iframe" ? (
+                        <>
+                          <Check className="w-3 h-3 text-emerald-400" />
+                          <span className="text-emerald-400">Kopiert!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3" />
+                          <span>Code kopieren</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-stone-400">
+                    Wichtig: Der Parameter <code className="text-stone-300">allow="payment"</code> ist enthalten, damit Apple Pay und Online-Zahlungen im iframe zuverlässig funktionieren.
+                  </p>
+                </div>
+
+                {/* OPTION 3: Eigene Subdomain (CNAME) */}
+                <div className="p-5 rounded-2xl border border-stone-200 hover:border-orange-300 transition space-y-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-xs">
+                      3
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-stone-900">
+                        Eigene Subdomain (z. B. bestellen.mein-restaurant.de)
+                      </h3>
+                      <p className="text-[11px] text-stone-500">
+                        Perfekt für Gastronomen mit eigener Domain. Maximale Professionalität und Markenbindung.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 text-xs space-y-2">
+                    <div className="font-semibold text-stone-800">
+                      So richtest du deine Subdomain ein:
+                    </div>
+                    <ol className="list-decimal list-inside space-y-1 text-stone-600 text-[11px]">
+                      <li>Öffne die DNS-Verwaltung deines Domain-Anbieters (Strato, Ionos, GoDaddy, Hetzner etc.).</li>
+                      <li>Erstelle einen neuen <strong>CNAME-Eintrag</strong>:</li>
+                      <li className="font-mono bg-white p-2 rounded border border-stone-200 text-stone-800">
+                        Hostname: <span className="font-bold">bestellen</span> &nbsp;|&nbsp; Ziel: <span className="font-bold">cname.deine-plattform.de</span>
+                      </li>
+                      <li>Sobald der Eintrag aktiv ist, antwortet das Bestellsystem unter deiner Restaurant-Domain.</li>
+                    </ol>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
