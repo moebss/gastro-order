@@ -46,6 +46,10 @@ import {
   Key,
   ShieldCheck,
   Trash2,
+  Search,
+  MessageCircle,
+  Database,
+  Sparkles,
 } from "lucide-react";
 
 export default function AdminPage() {
@@ -82,6 +86,16 @@ export default function AdminPage() {
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [lastOrderCount, setLastOrderCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Neues Gericht Modal State
+  const [showNewDishModal, setShowNewDishModal] = useState(false);
+  const [newDishName, setNewDishName] = useState("");
+  const [newDishCategory, setNewDishCategory] = useState("");
+  const [newDishPrice, setNewDishPrice] = useState("");
+  const [newDishDescription, setNewDishDescription] = useState("");
+  const [newDishVat, setNewDishVat] = useState<7 | 19>(7);
+  const [isSubmittingDish, setIsSubmittingDish] = useState(false);
 
   // Ausgewählte Bon-Bestellung für Druck
   const [printOrder, setPrintOrder] = useState<Order | null>(null);
@@ -90,6 +104,24 @@ export default function AdminPage() {
   const currentRestaurant =
     ALL_RESTAURANTS.find((r) => r.id === currentUser?.restaurantId) ||
     ALL_RESTAURANTS[0];
+
+  const handleSwitchRestaurant = (targetRestaurantId: string) => {
+    if (!currentUser) return;
+    const targetRest = ALL_RESTAURANTS.find((r) => r.id === targetRestaurantId);
+    if (targetRest) {
+      setCurrentUser({
+        email: currentUser.email,
+        restaurantId: targetRest.id,
+      });
+    }
+  };
+
+  const getWhatsAppUrl = (phone: string, customerName: string, orderNumber: string) => {
+    const cleanPhone = phone.replace(/[^0-9]/g, "");
+    const formatted = cleanPhone.startsWith("0") ? "49" + cleanPhone.slice(1) : cleanPhone;
+    const msg = encodeURIComponent(`Hallo ${customerName}, hier ist ${currentRestaurant.name} bezüglich deiner Bestellung ${orderNumber}.`);
+    return `https://wa.me/${formatted}?text=${msg}`;
+  };
 
   // Lokale Speisekarten-Kopie für Live-Änderungen
   const [menuItems, setMenuItems] = useState<MenuItem[]>(
@@ -446,10 +478,61 @@ export default function AdminPage() {
     }
   };
 
-  // Filterung der Bestellungen
+  // Neues Gericht anlegen
+  const handleCreateDish = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDishName.trim() || !newDishPrice || !currentUser) return;
+
+    setIsSubmittingDish(true);
+    try {
+      const res = await fetch("/api/admin/menu", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          restaurantId: currentUser.restaurantId,
+          categoryId: newDishCategory || currentRestaurant.categories[0]?.id,
+          name: newDishName,
+          description: newDishDescription,
+          basePrice: parseFloat(newDishPrice.replace(",", ".")),
+          vatRate: newDishVat,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.item) {
+        setMenuItems((prev) => [...prev, data.item]);
+        setShowNewDishModal(false);
+        setNewDishName("");
+        setNewDishPrice("");
+        setNewDishDescription("");
+        setMenuMessage(`„${data.item.name}“ erfolgreich zur Speisekarte hinzugefügt!`);
+        setTimeout(() => setMenuMessage(null), 3500);
+      } else {
+        alert(data.error || "Fehler beim Anlegen des Artikels.");
+      }
+    } catch (e) {
+      alert("Netzwerkfehler beim Anlegen des Artikels.");
+    } finally {
+      setIsSubmittingDish(false);
+    }
+  };
+
+  // Filterung der Bestellungen mit Status und Volltextsuche
   const filteredOrders = orders.filter((o) => {
-    if (statusFilter === "all") return true;
-    return o.status === statusFilter;
+    if (statusFilter !== "all" && o.status !== statusFilter) return false;
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const matchNumber = o.orderNumber.toLowerCase().includes(q);
+      const matchName = o.customer.name.toLowerCase().includes(q);
+      const matchPhone = o.customer.phone.toLowerCase().includes(q);
+      const matchStreet = (o.customer.street || "").toLowerCase().includes(q);
+      const matchPlz = (o.customer.plz || "").toLowerCase().includes(q);
+      const matchCity = (o.customer.city || "").toLowerCase().includes(q);
+      const matchItem = o.items.some((it) => it.name.toLowerCase().includes(q));
+      return matchNumber || matchName || matchPhone || matchStreet || matchPlz || matchCity || matchItem;
+    }
+
+    return true;
   });
 
   const countByStatus = {
@@ -461,10 +544,14 @@ export default function AdminPage() {
     cancelled: orders.filter((o) => o.status === "cancelled").length,
   };
 
-  // Statistiken
+  // Live-Statistiken für den Gastro-Alltag
   const totalRevenue = orders
     .filter((o) => o.status !== "cancelled")
-    .reduce((sum, o) => sum + o.calculation.total, 0);
+    .reduce((sum, o) => sum + (o.calculation?.total || 0), 0);
+  const todayRevenue = orders
+    .filter((o) => o.paymentStatus === "paid" || o.status === "completed")
+    .reduce((sum, o) => sum + (o.calculation?.total || 0), 0);
+  const activeBonsCount = countByStatus.new + countByStatus.preparing;
   const avgOrderValue =
     orders.length > 0 ? totalRevenue / (orders.length || 1) : 0;
 
@@ -644,10 +731,22 @@ export default function AdminPage() {
             <span className="text-2xl">{currentRestaurant.logo}</span>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="font-black text-base sm:text-lg">
-                  {currentRestaurant.name}
-                </h1>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-stone-800 border border-stone-700 text-orange-400 font-bold">
+                <div className="relative">
+                  <select
+                    value={currentRestaurant.id}
+                    onChange={(e) => handleSwitchRestaurant(e.target.value)}
+                    className="font-black text-sm sm:text-base bg-stone-800 hover:bg-stone-700 text-white border border-stone-700 rounded-lg px-2.5 py-1 pr-7 focus:outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer appearance-none transition"
+                    title="Zwischen Restaurants wechseln"
+                  >
+                    {ALL_RESTAURANTS.map((r) => (
+                      <option key={r.id} value={r.id} className="bg-stone-900 text-white">
+                        {r.logo} {r.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronRight className="w-3.5 h-3.5 text-stone-400 absolute right-2 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
+                </div>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-stone-800 border border-stone-700 text-orange-400 font-bold">
                   ADMIN
                 </span>
               </div>
@@ -814,6 +913,51 @@ export default function AdminPage() {
             <span>Team & Logins</span>
           </button>
         </div>
+
+        {/* Gastro Live Quick Stats Bar */}
+        <div className="bg-stone-950/80 border-t border-stone-800/80 py-2.5 px-4">
+          <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-3 sm:gap-6 flex-wrap">
+              {/* Bestellannahme Live Toggle Button */}
+              <button
+                onClick={handleTogglePause}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-bold transition cursor-pointer text-xs ${
+                  currentRestaurant.active
+                    ? "bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-900/60"
+                    : "bg-rose-950/80 text-rose-400 border border-rose-500/40 hover:bg-rose-900/60"
+                }`}
+                title="Klicken, um Bestellannahme zu pausieren oder zu aktivieren"
+              >
+                <span className={`w-2 h-2 rounded-full ${currentRestaurant.active ? "bg-emerald-400 animate-pulse" : "bg-rose-400"}`} />
+                <span>{currentRestaurant.active ? "Bestellannahme AKTIV" : "PAUSIERT (Küche voll)"}</span>
+              </button>
+
+              {/* Offene Bons */}
+              <div className="flex items-center gap-1.5 text-stone-300">
+                <Receipt className="w-3.5 h-3.5 text-amber-400" />
+                <span>Offene Bons:</span>
+                <span className="font-mono font-bold text-amber-400">{activeBonsCount}</span>
+              </div>
+
+              {/* Heutiger Umsatz */}
+              <div className="flex items-center gap-1.5 text-stone-300">
+                <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Tagesumsatz:</span>
+                <span className="font-mono font-bold text-emerald-400">{formatEuro(todayRevenue)}</span>
+              </div>
+            </div>
+
+            {/* Supabase Cloud Live Indikator */}
+            <div className="flex items-center gap-2 text-[11px] text-stone-400 font-mono">
+              <Database className="w-3.5 h-3.5 text-sky-400" />
+              <span>Supabase Cloud (EU):</span>
+              <span className="inline-flex items-center gap-1 text-sky-400 font-semibold bg-sky-950/60 px-2 py-0.5 rounded border border-sky-800/40">
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping" />
+                Live Sync
+              </span>
+            </div>
+          </div>
+        </div>
       </header>
 
       {/* Main Content Area */}
@@ -823,63 +967,87 @@ export default function AdminPage() {
         {/* ========================================================= */}
         {activeTab === "orders" && (
           <div className="space-y-6">
-            {/* Status Filter Tabs */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-              <button
-                onClick={() => setStatusFilter("all")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-                  statusFilter === "all"
-                    ? "bg-stone-900 text-white shadow-xs"
-                    : "bg-white text-stone-600 hover:bg-stone-200 border border-stone-200"
-                }`}
-              >
-                Alle ({countByStatus.all})
-              </button>
+            {/* Filter- & Suchleiste */}
+            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-stone-200 shadow-soft">
+              {/* Volltext Live-Suche */}
+              <div className="relative flex-1 max-w-md">
+                <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Kunde, Tel, Straße, #Bon oder Gericht suchen..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2 rounded-xl bg-stone-50 hover:bg-stone-100/80 focus:bg-white border border-stone-200 text-stone-900 text-xs placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-orange-500 transition shadow-inner"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 text-xs p-1 cursor-pointer"
+                    title="Suche zurücksetzen"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
 
-              <button
-                onClick={() => setStatusFilter("new")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
-                  statusFilter === "new"
-                    ? "bg-orange-600 text-white shadow-xs"
-                    : "bg-white text-orange-700 hover:bg-orange-50 border border-orange-200"
-                }`}
-              >
-                <span className="w-2 h-2 rounded-full bg-orange-500 animate-ping" />
-                <span>Neu ({countByStatus.new})</span>
-              </button>
+              {/* Status Filter Tabs */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
+                <button
+                  onClick={() => setStatusFilter("all")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap ${
+                    statusFilter === "all"
+                      ? "bg-stone-900 text-white shadow-xs"
+                      : "bg-stone-100 text-stone-600 hover:bg-stone-200 border border-stone-200"
+                  }`}
+                >
+                  Alle ({countByStatus.all})
+                </button>
 
-              <button
-                onClick={() => setStatusFilter("preparing")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-                  statusFilter === "preparing"
-                    ? "bg-amber-600 text-white shadow-xs"
-                    : "bg-white text-amber-800 hover:bg-amber-50 border border-amber-200"
-                }`}
-              >
-                In Zubereitung ({countByStatus.preparing})
-              </button>
+                <button
+                  onClick={() => setStatusFilter("new")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                    statusFilter === "new"
+                      ? "bg-orange-600 text-white shadow-xs"
+                      : "bg-stone-100 text-orange-700 hover:bg-orange-50 border border-orange-200"
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full bg-orange-500 animate-ping" />
+                  <span>Neu ({countByStatus.new})</span>
+                </button>
 
-              <button
-                onClick={() => setStatusFilter("delivering")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-                  statusFilter === "delivering"
-                    ? "bg-blue-600 text-white shadow-xs"
-                    : "bg-white text-blue-800 hover:bg-blue-50 border border-blue-200"
-                }`}
-              >
-                Unterwegs / Bereit ({countByStatus.delivering})
-              </button>
+                <button
+                  onClick={() => setStatusFilter("preparing")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap ${
+                    statusFilter === "preparing"
+                      ? "bg-amber-600 text-white shadow-xs"
+                      : "bg-stone-100 text-amber-800 hover:bg-amber-50 border border-amber-200"
+                  }`}
+                >
+                  In Zubereitung ({countByStatus.preparing})
+                </button>
 
-              <button
-                onClick={() => setStatusFilter("completed")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-                  statusFilter === "completed"
-                    ? "bg-emerald-700 text-white shadow-xs"
-                    : "bg-white text-emerald-800 hover:bg-emerald-50 border border-emerald-200"
-                }`}
-              >
-                Abgeschlossen ({countByStatus.completed})
-              </button>
+                <button
+                  onClick={() => setStatusFilter("delivering")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap ${
+                    statusFilter === "delivering"
+                      ? "bg-blue-600 text-white shadow-xs"
+                      : "bg-stone-100 text-blue-800 hover:bg-blue-50 border border-blue-200"
+                  }`}
+                >
+                  Unterwegs / Bereit ({countByStatus.delivering})
+                </button>
+
+                <button
+                  onClick={() => setStatusFilter("completed")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap ${
+                    statusFilter === "completed"
+                      ? "bg-emerald-700 text-white shadow-xs"
+                      : "bg-stone-100 text-emerald-800 hover:bg-emerald-50 border border-emerald-200"
+                  }`}
+                >
+                  Abgeschlossen ({countByStatus.completed})
+                </button>
+              </div>
             </div>
 
             {/* Bestellkarten Grid */}
@@ -955,15 +1123,28 @@ export default function AdminPage() {
 
                         {/* Gast-Informationen */}
                         <div className="py-2.5 text-xs text-stone-700 space-y-1">
-                          <div className="font-bold text-stone-900 flex items-center justify-between">
+                          <div className="font-bold text-stone-900 flex items-center justify-between flex-wrap gap-1">
                             <span>{order.customer.name}</span>
-                            <a
-                              href={`tel:${order.customer.phone}`}
-                              className="text-orange-600 hover:underline flex items-center gap-1 font-semibold text-[11px]"
-                            >
-                              <Phone className="w-3 h-3" />
-                              <span>{order.customer.phone}</span>
-                            </a>
+                            <div className="flex items-center gap-1.5">
+                              <a
+                                href={`tel:${order.customer.phone}`}
+                                className="text-stone-700 hover:text-stone-900 flex items-center gap-1 font-semibold text-[11px] bg-stone-100 hover:bg-stone-200 px-2 py-0.5 rounded-lg transition"
+                                title="Kunde anrufen"
+                              >
+                                <Phone className="w-3 h-3 text-stone-500" />
+                                <span>{order.customer.phone}</span>
+                              </a>
+                              <a
+                                href={getWhatsAppUrl(order.customer.phone, order.customer.name, order.orderNumber)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-emerald-700 hover:text-emerald-800 flex items-center gap-1 font-semibold text-[11px] bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 px-2 py-0.5 rounded-lg transition"
+                                title="WhatsApp Nachricht an Kunden senden"
+                              >
+                                <MessageCircle className="w-3 h-3 text-emerald-600" />
+                                <span>WhatsApp</span>
+                              </a>
+                            </div>
                           </div>
 
                           {isDelivery && (
@@ -1109,12 +1290,22 @@ export default function AdminPage() {
                 </p>
               </div>
 
-              {menuMessage && (
-                <div className="px-3.5 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center gap-1.5 shadow-xs">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>{menuMessage}</span>
-                </div>
-              )}
+              <div className="flex items-center gap-3">
+                {menuMessage && (
+                  <div className="px-3.5 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center gap-1.5 shadow-xs">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>{menuMessage}</span>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => setShowNewDishModal(true)}
+                  className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md shadow-orange-600/20"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Neues Gericht anlegen</span>
+                </button>
+              </div>
             </div>
 
             {/* Artikelliste */}
@@ -1933,9 +2124,9 @@ export default function AdminPage() {
             </div>
 
             {/* Bon Inhalt */}
-            <div className="my-4 p-4 bg-stone-50 rounded-xl border border-stone-300 font-mono text-xs leading-tight text-stone-900">
+            <div id="printable-receipt" className="my-4 p-4 bg-stone-50 rounded-xl border border-stone-300 font-mono text-xs leading-tight text-stone-900">
               <div className="text-center pb-2 border-b border-dashed border-stone-400">
-                <p className="font-bold uppercase">{currentRestaurant.name}</p>
+                <p className="font-bold uppercase text-sm">{currentRestaurant.name}</p>
                 <p>BON #{printOrder.orderNumber}</p>
                 <p>{new Date(printOrder.createdAt).toLocaleString("de-DE")}</p>
               </div>
@@ -2014,7 +2205,7 @@ export default function AdminPage() {
                 className="flex-1 bg-stone-900 hover:bg-black text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
               >
                 <Printer className="w-4 h-4" />
-                <span>Bon Drucken</span>
+                <span>Bon Drucken (80mm)</span>
               </button>
               <button
                 onClick={() => setPrintOrder(null)}
@@ -2026,6 +2217,161 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      {/* ========================================================= */}
+      {/* NEUES GERICHT MODAL */}
+      {/* ========================================================= */}
+      {showNewDishModal && (
+        <div className="fixed inset-0 z-50 bg-stone-900/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+            <div className="flex items-center justify-between pb-3 border-b border-stone-200">
+              <h3 className="font-bold text-sm text-stone-900 flex items-center gap-2">
+                <UtensilsCrossed className="w-4 h-4 text-orange-600" />
+                <span>Neues Gericht zur Speisekarte hinzufügen</span>
+              </h3>
+              <button
+                onClick={() => setShowNewDishModal(false)}
+                className="text-stone-400 hover:text-stone-700 text-xs font-bold p-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateDish} className="mt-4 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-1">
+                  Name des Gerichts *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="z. B. Pizza Tartufo e Funghi"
+                  value={newDishName}
+                  onChange={(e) => setNewDishName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-stone-900 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">
+                    Kategorie
+                  </label>
+                  <select
+                    value={newDishCategory}
+                    onChange={(e) => setNewDishCategory(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-stone-300 text-stone-900 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
+                  >
+                    {currentRestaurant.categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">
+                    Grundpreis (€) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="z. B. 12,50"
+                    value={newDishPrice}
+                    onChange={(e) => setNewDishPrice(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-stone-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-1">
+                  Beschreibung & Zutaten
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="z. B. Fior di Latte, frischer schwarzer Trüffel, Waldpilze..."
+                  value={newDishDescription}
+                  onChange={(e) => setNewDishDescription(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl border border-stone-300 text-stone-900 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-1">
+                  MwSt.-Satz
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-1.5 text-xs text-stone-800 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="vat"
+                      checked={newDishVat === 7}
+                      onChange={() => setNewDishVat(7)}
+                    />
+                    <span>7% (Speisen / Food)</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 text-xs text-stone-800 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="vat"
+                      checked={newDishVat === 19}
+                      onChange={() => setNewDishVat(19)}
+                    />
+                    <span>19% (Getränke / Drinks)</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-2 border-t border-stone-200">
+                <button
+                  type="submit"
+                  disabled={isSubmittingDish}
+                  className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-orange-600/20 disabled:opacity-50"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>{isSubmittingDish ? "Wird gespeichert..." : "Gericht speichern"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowNewDishModal(false)}
+                  className="px-4 py-2.5 border border-stone-200 text-stone-600 rounded-xl text-xs font-semibold hover:bg-stone-50 cursor-pointer"
+                >
+                  Abbrechen
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Druck-Styling für ESC/POS Thermo-Bondrucker */}
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden !important;
+          }
+          #printable-receipt, #printable-receipt * {
+            visibility: visible !important;
+          }
+          #printable-receipt {
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 80mm !important;
+            max-width: 80mm !important;
+            margin: 0 !important;
+            padding: 8px !important;
+            font-family: monospace !important;
+            font-size: 11px !important;
+            line-height: 1.25 !important;
+            background: white !important;
+            color: black !important;
+            border: none !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
