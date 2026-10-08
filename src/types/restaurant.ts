@@ -85,6 +85,7 @@ export interface Restaurant {
   openingHours: OpeningHour[];
   categories: Category[];
   items: MenuItem[];
+  mollieApiKey?: string;
 }
 
 export interface CartExtraItem {

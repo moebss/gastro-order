@@ -85,8 +85,36 @@ export default function AdminPage() {
   useEffect(() => {
     if (currentRestaurant) {
       setMenuItems([...currentRestaurant.items]);
+      setMollieKeyInput(currentRestaurant.mollieApiKey || "");
     }
   }, [currentRestaurant]);
+
+  const [mollieKeyInput, setMollieKeyInput] = useState(
+    currentRestaurant.mollieApiKey || ""
+  );
+  const [mollieKeySaved, setMollieKeySaved] = useState(false);
+
+  const handleSaveMollieKey = async () => {
+    if (!currentUser) return;
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          restaurantId: currentUser.restaurantId,
+          mollieApiKey: mollieKeyInput,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        currentRestaurant.mollieApiKey = mollieKeyInput;
+        setMollieKeySaved(true);
+        setTimeout(() => setMollieKeySaved(false), 3000);
+      }
+    } catch (e) {
+      alert("Fehler beim Speichern des API-Schlüssels.");
+    }
+  };
 
   // Login Funktion
   const handleLogin = (e?: React.FormEvent) => {
@@ -1097,6 +1125,80 @@ export default function AdminPage() {
                     </span>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* Online-Zahlung & Mollie-Konto */}
+            <div className="bg-white rounded-2xl p-6 border border-stone-200 shadow-soft space-y-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="font-bold text-base text-stone-900 flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-emerald-600" />
+                    <span>Mollie Online-Zahlung (PayPal, Apple Pay, Karte)</span>
+                  </h3>
+                  <p className="text-xs text-stone-500 mt-1 max-w-xl leading-relaxed">
+                    Hinterlege deinen persönlichen Mollie-API-Schlüssel, damit Einnahmen aus Online-Bestellungen direkt und ohne Umwege auf dein Restaurant-Bankkonto überwiesen werden.
+                  </p>
+                </div>
+
+                <span
+                  className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider border ${
+                    mollieKeyInput.startsWith("live_")
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : mollieKeyInput.startsWith("test_")
+                      ? "bg-amber-50 text-amber-700 border-amber-200"
+                      : "bg-stone-100 text-stone-600 border-stone-200"
+                  }`}
+                >
+                  {mollieKeyInput.startsWith("live_")
+                    ? "Live-Konto aktiv"
+                    : mollieKeyInput.startsWith("test_")
+                    ? "Test-Modus"
+                    : "Simulator aktiv"}
+                </span>
+              </div>
+
+              <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">
+                    Mollie API-Schlüssel (beginnt mit live_ oder test_)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="password"
+                      placeholder="live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                      value={mollieKeyInput}
+                      onChange={(e) => setMollieKeyInput(e.target.value)}
+                      className="flex-1 px-3.5 py-2.5 rounded-xl border border-stone-200 text-xs font-mono bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-600"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSaveMollieKey}
+                      className="bg-stone-900 hover:bg-black text-white font-bold px-5 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer"
+                    >
+                      {mollieKeySaved ? (
+                        <>
+                          <Check className="w-4 h-4 text-emerald-400" />
+                          <span>Gespeichert!</span>
+                        </>
+                      ) : (
+                        <span>Speichern</span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-stone-500 space-y-1 pt-1 border-t border-stone-200/60">
+                  <p className="font-semibold text-stone-700">So findest du deinen Schlüssel:</p>
+                  <ol className="list-decimal list-inside space-y-0.5 text-stone-600">
+                    <li>Logge dich auf <a href="https://www.mollie.com/dashboard" target="_blank" rel="noreferrer" className="text-orange-600 underline">mollie.com</a> in dein Restaurant-Konto ein.</li>
+                    <li>Klicke im Menü auf <strong>Entwickler ➔ API-Schlüssel</strong>.</li>
+                    <li>Kopiere den <strong>Live API-Schlüssel</strong> und füge ihn hier ein.</li>
+                  </ol>
+                  <p className="text-[10px] text-stone-400 pt-1">
+                    Ohne eigenen Schlüssel läuft das System automatisch im sicheren Entwickler-Simulator.
+                  </p>
+                </div>
               </div>
             </div>
           </div>

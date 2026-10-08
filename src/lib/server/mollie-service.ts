@@ -42,7 +42,7 @@ export async function createMolliePayment(
   restaurant: Restaurant,
   baseUrl: string
 ): Promise<{ paymentId: string; checkoutUrl: string }> {
-  const mollieApiKey = process.env.MOLLIE_API_KEY;
+  const mollieApiKey = restaurant.mollieApiKey || process.env.MOLLIE_API_KEY;
   const formattedAmount = order.calculation.total.toFixed(2);
   const redirectUrl = `${baseUrl}/order/status?orderId=${order.id}&token=${order.guestAccessToken || ""}`;
   const webhookUrl = `${baseUrl}/api/webhooks/mollie`;

@@ -36,6 +36,10 @@ export async function PATCH(req: NextRequest) {
       restaurant.deliveryZones = deliveryZones;
     }
 
+    if (typeof body.mollieApiKey === "string") {
+      restaurant.mollieApiKey = body.mollieApiKey.trim();
+    }
+
     return NextResponse.json({
       success: true,
       message: "Einstellungen erfolgreich gespeichert.",
