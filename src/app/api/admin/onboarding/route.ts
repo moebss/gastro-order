@@ -3,6 +3,7 @@ import { Restaurant, DeliveryZone, OpeningHour } from "../../../../types/restaur
 import { ALL_RESTAURANTS } from "../../../../data/restaurants";
 import { ONBOARDING_TEMPLATES } from "../../../../lib/server/onboarding-templates";
 import { parseMenuCsv } from "../../../../lib/server/csv-menu-parser";
+import { createAdminUser } from "../../../../lib/server/users-store";
 
 export interface OnboardRestaurantPayload {
   name: string;
@@ -193,12 +194,31 @@ export async function POST(req: NextRequest) {
     // Im laufenden System registrieren
     ALL_RESTAURANTS.push(newRestaurant);
 
+    // Automatisch Inhaber-Login für das neue Restaurant erstellen
+    const initialPassword = `gastro${Math.floor(100 + Math.random() * 900)}`;
+    try {
+      await createAdminUser({
+        email: body.email.trim(),
+        name: body.ownerName?.trim() || `${body.name} Inhaber`,
+        restaurantId: newRestaurant.id,
+        role: "restaurant_owner",
+        password: initialPassword,
+      });
+    } catch (userErr) {
+      console.warn("User konnte nicht automatisch erstellt werden:", userErr);
+    }
+
     return NextResponse.json(
       {
         success: true,
         restaurant: newRestaurant,
         liveUrl: `/r/${newRestaurant.slug}`,
         adminUrl: `/admin?restaurantId=${newRestaurant.id}`,
+        initialLogin: {
+          email: body.email.trim(),
+          password: initialPassword,
+          role: "restaurant_owner",
+        },
         message: `Restaurant „${newRestaurant.name}“ erfolgreich angelegt und online!`,
       },
       { status: 201 }

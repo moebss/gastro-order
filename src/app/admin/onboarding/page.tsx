@@ -601,12 +601,28 @@ Getränke;91;Coca-Cola 0,33l;Eiskalte Erfrischung;2.50;19;`,
               </div>
               <div className="flex justify-between">
                 <span className="text-stone-500">Artikel auf der Karte:</span>
-                <span className="font-bold text-stone-800">{createdResult.restaurant?.items?.length} Gerichte & Getränke</span>
+                <span className="font-bold text-stone-800">{createdResult.restaurant?.items?.length} Gerichte &amp; Getränke</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-stone-500">Liefergebiete:</span>
                 <span className="font-bold text-stone-800">{createdResult.restaurant?.deliveryZones?.length} PLZ-Zonen</span>
               </div>
+              {createdResult.initialLogin && (
+                <div className="pt-2 mt-2 border-t border-stone-200 bg-orange-50/60 p-2.5 rounded-xl space-y-1">
+                  <div className="font-bold text-orange-900 flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-orange-600" />
+                    <span>Inhaber-Login (Sofort einsatzbereit):</span>
+                  </div>
+                  <div className="flex justify-between font-mono text-[11px]">
+                    <span className="text-stone-600">E-Mail:</span>
+                    <span className="font-bold text-stone-900">{createdResult.initialLogin.email}</span>
+                  </div>
+                  <div className="flex justify-between font-mono text-[11px]">
+                    <span className="text-stone-600">Passwort:</span>
+                    <span className="font-bold text-stone-900">{createdResult.initialLogin.password}</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2 max-w-md mx-auto">
