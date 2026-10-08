@@ -102,11 +102,53 @@ function MollieSimulatorContent() {
 
           <div className="space-y-2">
             {[
-              { id: "paypal", name: "PayPal", icon: "🅿️" },
-              { id: "applepay", name: "Apple Pay", icon: "🍎" },
-              { id: "card", name: "Kreditkarte (Visa / Mastercard)", icon: "💳" },
-              { id: "sepa", name: "SEPA Banküberweisung", icon: "🏦" },
-              { id: "wero", name: "Wero (EPI)", icon: "🇪🇺" },
+              {
+                id: "paypal",
+                name: "PayPal",
+                badge: (
+                  <div className="w-8 h-8 rounded-lg bg-[#003087] flex items-center justify-center text-white shrink-0 shadow-xs">
+                    <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
+                      <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 3.72a.786.786 0 0 1 .774-.654h6.398c2.955 0 5.068.745 5.86 2.052.753 1.24.582 2.97-.478 4.792-1.34 2.301-3.642 3.51-6.66 3.51H8.76l-1.042 6.643a.641.641 0 0 1-.642.574z"/>
+                    </svg>
+                  </div>
+                ),
+              },
+              {
+                id: "applepay",
+                name: "Apple Pay / Google Pay",
+                badge: (
+                  <div className="w-8 h-8 rounded-lg bg-black text-white flex items-center justify-center font-bold text-[10px] shrink-0">
+                    Pay
+                  </div>
+                ),
+              },
+              {
+                id: "card",
+                name: "Kreditkarte (Visa / Mastercard)",
+                badge: (
+                  <div className="w-8 h-8 rounded-lg bg-slate-800 text-sky-400 flex items-center justify-center shrink-0">
+                    <CreditCard className="w-4 h-4" />
+                  </div>
+                ),
+              },
+              {
+                id: "sepa",
+                name: "SEPA Banküberweisung",
+                badge: (
+                  <div className="w-8 h-8 rounded-lg bg-emerald-800 text-white flex items-center justify-center font-mono font-bold text-[10px] shrink-0">
+                    SEPA
+                  </div>
+                ),
+              },
+              {
+                id: "wero",
+                name: "Wero (EPI)",
+                badge: (
+                  <div className="w-8 h-8 rounded-lg bg-[#0f2e4a] text-emerald-400 flex items-center justify-center font-mono font-bold text-[10px] shrink-0">
+                    WERO
+                  </div>
+                ),
+              },
             ].map((m) => (
               <label
                 key={m.id}
@@ -118,7 +160,7 @@ function MollieSimulatorContent() {
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-lg">{m.icon}</span>
+                  {m.badge}
                   <span className="font-bold text-sm text-stone-800">{m.name}</span>
                 </div>
                 <div
