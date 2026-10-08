@@ -11,12 +11,7 @@ interface PageProps {
   };
 }
 
-export async function generateStaticParams() {
-  const restaurants = await getAllRestaurants();
-  return restaurants.map((r) => ({
-    slug: r.slug,
-  }));
-}
+export const dynamic = "force-dynamic";
 
 export default async function RestaurantPage({ params }: PageProps) {
   const restaurant = await getRestaurantBySlug(params.slug);
