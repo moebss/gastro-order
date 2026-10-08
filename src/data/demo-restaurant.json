@@ -1,0 +1,504 @@
+{
+  "id": "rest_bella_napoli_01",
+  "name": "Pizzeria Bella Napoli",
+  "slug": "pizzeria-bella-napoli",
+  "tagline": "Echte neapolitanische Steinofenpizza & frische Pasta seit 1994",
+  "address": {
+    "street": "Venloer Straße 240",
+    "plz": "50823",
+    "city": "Köln"
+  },
+  "phone": "0221 5104820",
+  "email": "ciao@bella-napoli-koeln.de",
+  "logo": "🍕",
+  "heroImage": "https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=1200&auto=format&fit=crop",
+  "accentColor": "#ea580c",
+  "active": true,
+  "openingHours": [
+    {
+      "day": 1,
+      "dayName": "Montag",
+      "isOpen": true,
+      "slots": [
+        { "from": "11:30", "to": "14:30" },
+        { "from": "17:00", "to": "22:00" }
+      ]
+    },
+    {
+      "day": 2,
+      "dayName": "Dienstag",
+      "isOpen": true,
+      "slots": [
+        { "from": "11:30", "to": "14:30" },
+        { "from": "17:00", "to": "22:00" }
+      ]
+    },
+    {
+      "day": 3,
+      "dayName": "Mittwoch",
+      "isOpen": true,
+      "slots": [
+        { "from": "11:30", "to": "14:30" },
+        { "from": "17:00", "to": "22:00" }
+      ]
+    },
+    {
+      "day": 4,
+      "dayName": "Donnerstag",
+      "isOpen": true,
+      "slots": [
+        { "from": "11:30", "to": "14:30" },
+        { "from": "17:00", "to": "22:00" }
+      ]
+    },
+    {
+      "day": 5,
+      "dayName": "Freitag",
+      "isOpen": true,
+      "slots": [
+        { "from": "11:30", "to": "14:30" },
+        { "from": "17:00", "to": "23:00" }
+      ]
+    },
+    {
+      "day": 6,
+      "dayName": "Samstag",
+      "isOpen": true,
+      "slots": [
+        { "from": "12:00", "to": "23:00" }
+      ]
+    },
+    {
+      "day": 0,
+      "dayName": "Sonntag",
+      "isOpen": true,
+      "slots": [
+        { "from": "12:00", "to": "22:00" }
+      ]
+    }
+  ],
+  "deliveryZones": [
+    {
+      "plz": "50823",
+      "areaName": "Köln-Ehrenfeld",
+      "minOrder": 15.00,
+      "deliveryFee": 1.50,
+      "estimatedMinutes": 30
+    },
+    {
+      "plz": "50825",
+      "areaName": "Köln-Neuehrenfeld",
+      "minOrder": 18.00,
+      "deliveryFee": 2.00,
+      "estimatedMinutes": 35
+    },
+    {
+      "plz": "50672",
+      "areaName": "Köln-Belgisches Viertel",
+      "minOrder": 20.00,
+      "deliveryFee": 2.50,
+      "estimatedMinutes": 40
+    },
+    {
+      "plz": "50674",
+      "areaName": "Köln-Neustadt-Süd",
+      "minOrder": 25.00,
+      "deliveryFee": 3.00,
+      "estimatedMinutes": 45
+    }
+  ],
+  "categories": [
+    {
+      "id": "cat_pizza",
+      "restaurantId": "rest_bella_napoli_01",
+      "name": "Steinofen-Pizza",
+      "description": "Traditionell 48 Std. kalt gereifter Teig, San Marzano Tomaten D.O.P., Fior di Latte",
+      "order": 1,
+      "active": true
+    },
+    {
+      "id": "cat_pasta",
+      "restaurantId": "rest_bella_napoli_01",
+      "name": "Frische Pasta",
+      "description": "Täglich hausgemachte Nudeln nach originalem Familienrezept",
+      "order": 2,
+      "active": true
+    },
+    {
+      "id": "cat_salate",
+      "restaurantId": "rest_bella_napoli_01",
+      "name": "Knackige Salate",
+      "description": "Mit frischem Marktsalat und hausgemachten Dressings serviert",
+      "order": 3,
+      "active": true
+    },
+    {
+      "id": "cat_getraenke",
+      "restaurantId": "rest_bella_napoli_01",
+      "name": "Getränke & Wein",
+      "description": "Gekühlte Softdrinks, italienisches Bier und erlesene Weine (19% MwSt.)",
+      "order": 4,
+      "active": true
+    }
+  ],
+  "items": [
+    {
+      "id": "item_pizza_margherita",
+      "categoryId": "cat_pizza",
+      "number": "10",
+      "name": "Pizza Margherita",
+      "description": "Fruchtige San Marzano Tomatensauce, cremiger Fior di Latte Mozzarella, frisches Basilikum, extra natives Olivenöl",
+      "basePrice": 8.50,
+      "vatRate": 7,
+      "allergens": ["A", "G"],
+      "image": "https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?q=80&w=800&auto=format&fit=crop",
+      "isSoldOut": false,
+      "order": 1,
+      "sizes": [
+        { "id": "size_standard", "name": "Klassik Ø 28 cm", "price": 8.50 },
+        { "id": "size_family", "name": "Familie Ø 45 cm", "price": 16.50 }
+      ],
+      "extraGroups": [
+        {
+          "id": "grp_kaese_teig",
+          "name": "Käse & Kruste",
+          "required": false,
+          "multiple": true,
+          "extras": [
+            { "id": "ext_bufala", "name": "Büffelmozzarella D.O.P.", "price": 2.50 },
+            { "id": "ext_parmesan", "name": "Grana Padano gehobelt", "price": 1.50 },
+            { "id": "ext_cheese_crust", "name": "Käserandfüllung (Gouda)", "price": 3.00 }
+          ]
+        },
+        {
+          "id": "grp_toppings",
+          "name": "Zusätzliche Toppings",
+          "required": false,
+          "multiple": true,
+          "extras": [
+            { "id": "ext_knoblauch", "name": "Frischer Knoblauch & Chili", "price": 0.80 },
+            { "id": "ext_basilikum", "name": "Extra Frisches Basilikum", "price": 0.80 },
+            { "id": "ext_oliven", "name": "Schwarze Taggiasca-Oliven", "price": 1.20 },
+            { "id": "ext_salami", "name": "Scharfe Salami Spianata", "price": 2.00 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "item_pizza_salame",
+      "categoryId": "cat_pizza",
+      "number": "12",
+      "name": "Pizza Salame",
+      "description": "San Marzano Tomaten, Fior di Latte Mozzarella, feine italienische Edelsalami",
+      "basePrice": 9.90,
+      "vatRate": 7,
+      "allergens": ["A", "G"],
+      "image": "https://images.unsplash.com/photo-1628840042765-356cda07504e?q=80&w=800&auto=format&fit=crop",
+      "isSoldOut": false,
+      "order": 2,
+      "sizes": [
+        { "id": "size_standard", "name": "Klassik Ø 28 cm", "price": 9.90 },
+        { "id": "size_family", "name": "Familie Ø 45 cm", "price": 18.50 }
+      ],
+      "extraGroups": [
+        {
+          "id": "grp_toppings",
+          "name": "Wähle deine Extras",
+          "required": false,
+          "multiple": true,
+          "extras": [
+            { "id": "ext_pilze", "name": "Frische Champignons", "price": 1.50 },
+            { "id": "ext_peperoni", "name": "Mild eingelegte Peperoni", "price": 1.00 },
+            { "id": "ext_gorgonzola", "name": "Pikanter Gorgonzola", "price": 2.00 },
+            { "id": "ext_extra_cheese", "name": "Doppelter Mozzarella", "price": 2.00 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "item_pizza_diavola",
+      "categoryId": "cat_pizza",
+      "number": "15",
+      "name": "Pizza Diavola (Scharf)",
+      "description": "Tomatensauce, Fior di Latte, scharfe kalabrische Spianata-Salami, Peperoncino, rote Zwiebeln",
+      "basePrice": 11.20,
+      "vatRate": 7,
+      "allergens": ["A", "G"],
+      "image": "https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?q=80&w=800&auto=format&fit=crop",
+      "isSoldOut": false,
+      "order": 3,
+      "sizes": [
+        { "id": "size_standard", "name": "Klassik Ø 28 cm", "price": 11.20 },
+        { "id": "size_family", "name": "Familie Ø 45 cm", "price": 20.90 }
+      ],
+      "extraGroups": [
+        {
+          "id": "grp_toppings",
+          "name": "Wähle deine Extras",
+          "required": false,
+          "multiple": true,
+          "extras": [
+            { "id": "ext_jalapeno", "name": "Extra Jalapeños", "price": 1.00 },
+            { "id": "ext_knoblauch_oel", "name": "Hausgemachtes Chili-Knoblauch-Öl", "price": 0.80 },
+            { "id": "ext_ricotta", "name": "Frischer Ricotta-Käse", "price": 2.00 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "item_pizza_funghi_tartufo",
+      "categoryId": "cat_pizza",
+      "number": "18",
+      "name": "Pizza Funghi e Tartufo",
+      "description": "Fior di Latte, braune Champignons, Austernpilze, echte schwarze Trüffelcreme, Petersilie",
+      "basePrice": 13.50,
+      "vatRate": 7,
+      "allergens": ["A", "G"],
+      "image": "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?q=80&w=800&auto=format&fit=crop",
+      "isSoldOut": false,
+      "order": 4,
+      "sizes": [
+        { "id": "size_standard", "name": "Klassik Ø 28 cm", "price": 13.50 },
+        { "id": "size_family", "name": "Familie Ø 45 cm", "price": 24.50 }
+      ],
+      "extraGroups": [
+        {
+          "id": "grp_toppings",
+          "name": "Wähle deine Extras",
+          "required": false,
+          "multiple": true,
+          "extras": [
+            { "id": "ext_parma", "name": "Prosciutto di Parma 18 Monate", "price": 3.00 },
+            { "id": "ext_rucola", "name": "Knackiger Wildkräuter-Rucola", "price": 1.50 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "item_pizza_quattro_stagioni",
+      "categoryId": "cat_pizza",
+      "number": "22",
+      "name": "Pizza Quattro Stagioni",
+      "description": "Viertelgeteilt: Schinken, Champignons, Artischockenherzen, Kalamata-Oliven",
+      "basePrice": 12.00,
+      "vatRate": 7,
+      "allergens": ["A", "G"],
+      "image": "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=800&auto=format&fit=crop",
+      "isSoldOut": true,
+      "order": 5,
+      "sizes": [
+        { "id": "size_standard", "name": "Klassik Ø 28 cm", "price": 12.00 },
+        { "id": "size_family", "name": "Familie Ø 45 cm", "price": 22.00 }
+      ],
+      "extraGroups": []
+    },
+    {
+      "id": "item_pasta_carbonara",
+      "categoryId": "cat_pasta",
+      "number": "31",
+      "name": "Spaghetti alla Carbonara Autentica",
+      "description": "Original römisch: Knuspriger Guanciale-Speck, Eigelb vom Bio-Freiland-Ei, Pecorino Romano, frisch gemahlener schwarzer Pfeffer. Garantiert OHNE Sahne!",
+      "basePrice": 12.50,
+      "vatRate": 7,
+      "allergens": ["A", "C", "G"],
+      "image": "https://images.unsplash.com/photo-1612874742237-6526221588e3?q=80&w=800&auto=format&fit=crop",
+      "isSoldOut": false,
+      "order": 1,
+      "sizes": [
+        { "id": "size_portion_normal", "name": "Standardportion", "price": 12.50 },
+        { "id": "size_portion_gross", "name": "Große Portion (+30% Pasta)", "price": 15.50 }
+      ],
+      "extraGroups": [
+        {
+          "id": "grp_pasta_extras",
+          "name": "Extras",
+          "required": false,
+          "multiple": true,
+          "extras": [
+            { "id": "ext_pecorino_extra", "name": "Extra Portion Pecorino Romano", "price": 1.80 },
+            { "id": "ext_guanciale_extra", "name": "Doppelter Guanciale", "price": 2.50 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "item_pasta_arrabbiata",
+      "categoryId": "cat_pasta",
+      "number": "34",
+      "name": "Penne all'Arrabbiata",
+      "description": "Fruchtige Tomatensauce, frischer Knoblauch, feuriges Peperoncino, glatte Petersilie (Vegan)",
+      "basePrice": 10.20,
+      "vatRate": 7,
+      "allergens": ["A"],
+      "image": "https://images.unsplash.com/photo-1551183053-bf91a1d81141?q=80&w=800&auto=format&fit=crop",
+      "isSoldOut": false,
+      "order": 2,
+      "sizes": [
+        { "id": "size_portion_normal", "name": "Standardportion", "price": 10.20 },
+        { "id": "size_portion_gross", "name": "Große Portion", "price": 12.90 }
+      ],
+      "extraGroups": [
+        {
+          "id": "grp_arrabbiata_extras",
+          "name": "Gratinierung & Käse",
+          "required": false,
+          "multiple": true,
+          "extras": [
+            { "id": "ext_mozz_uberbacken", "name": "Im Steinofen mit Mozzarella überbacken", "price": 2.20 },
+            { "id": "ext_parmesan_sep", "name": "Parmigiano Reggiano extra", "price": 1.50 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "item_pasta_lasagne",
+      "categoryId": "cat_pasta",
+      "number": "39",
+      "name": "Lasagne al Forno Emiliana",
+      "description": "Mehrschichtige hausgemachte Pasta, 6 Stunden geschmortes Rinderhack-Ragù Bolognese, zarte Béchamelsauce, knusprig goldbraun überbacken",
+      "basePrice": 13.90,
+      "vatRate": 7,
+      "allergens": ["A", "C", "G"],
+      "image": "https://images.unsplash.com/photo-1574894709920-11b28e7367e3?q=80&w=800&auto=format&fit=crop",
+      "isSoldOut": false,
+      "order": 3,
+      "sizes": [],
+      "extraGroups": []
+    },
+    {
+      "id": "item_salat_mista",
+      "categoryId": "cat_salate",
+      "number": "45",
+      "name": "Insalata Mista Fresca",
+      "description": "Knackige Blattsalate, Kirschtomaten, Gurkenscheiben, Karottenraspel, gehobelte Radieschen",
+      "basePrice": 6.90,
+      "vatRate": 7,
+      "allergens": [],
+      "image": "https://images.unsplash.com/photo-1540420773420-3366772f4999?q=80&w=800&auto=format&fit=crop",
+      "isSoldOut": false,
+      "order": 1,
+      "sizes": [],
+      "extraGroups": [
+        {
+          "id": "grp_dressing",
+          "name": "Dressing wählen (Pflicht)",
+          "required": true,
+          "multiple": false,
+          "minSelections": 1,
+          "maxSelections": 1,
+          "extras": [
+            { "id": "dr_balsamico", "name": "Balsamico-Olivenöl-Vinaigrette", "price": 0.00 },
+            { "id": "dr_joghurt", "name": "Hausgemachtes Joghurt-Kräuter-Dressing", "price": 0.00 },
+            { "id": "dr_ohne", "name": "Nur reines Olivenöl & Zitrone", "price": 0.00 }
+          ]
+        },
+        {
+          "id": "grp_salat_upgrade",
+          "name": "Upgrade dein Salat",
+          "required": false,
+          "multiple": true,
+          "extras": [
+            { "id": "ext_pizzabrot", "name": "Warmes Pizzabrot mit Rosmarin (4 Stk.)", "price": 2.50 },
+            { "id": "ext_thunfisch", "name": "Mediterraner Thunfisch & rote Zwiebeln", "price": 2.80 },
+            { "id": "ext_hirtenkaese", "name": "Feta-Käse Würfel", "price": 2.00 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "item_salat_caprese",
+      "categoryId": "cat_salate",
+      "number": "48",
+      "name": "Caprese con Mozzarella di Bufala",
+      "description": "Ganze kampanische Büffelmozzarella-Kugel (125g), aromatische Ochsenherztomaten, frisches Basilikum, Aceto Balsamico di Modena",
+      "basePrice": 10.50,
+      "vatRate": 7,
+      "allergens": ["G"],
+      "image": "https://images.unsplash.com/photo-1592417817098-8f3d6ef23a65?q=80&w=800&auto=format&fit=crop",
+      "isSoldOut": false,
+      "order": 2,
+      "sizes": [],
+      "extraGroups": [
+        {
+          "id": "grp_caprese_extras",
+          "name": "Dazu empfohlen",
+          "required": false,
+          "multiple": true,
+          "extras": [
+            { "id": "ext_pizzabrot", "name": "Warmes Pizzabrot frisch aus dem Ofen", "price": 2.50 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "item_cola_033",
+      "categoryId": "cat_getraenke",
+      "number": "70",
+      "name": "Coca-Cola Original 0,33l",
+      "description": "Erfrischendes Erfrischungsgetränk in der eiskalten Dose (inkl. 0,25 € DPG Pfand)",
+      "basePrice": 2.90,
+      "vatRate": 19,
+      "allergens": [],
+      "isSoldOut": false,
+      "order": 1,
+      "sizes": [],
+      "extraGroups": []
+    },
+    {
+      "id": "item_cola_zero_033",
+      "categoryId": "cat_getraenke",
+      "number": "71",
+      "name": "Coca-Cola Zero Sugar 0,33l",
+      "description": "Voller Geschmack, kein Zucker (inkl. 0,25 € DPG Pfand)",
+      "basePrice": 2.90,
+      "vatRate": 19,
+      "allergens": [],
+      "isSoldOut": false,
+      "order": 2,
+      "sizes": [],
+      "extraGroups": []
+    },
+    {
+      "id": "item_san_pellegrino",
+      "categoryId": "cat_getraenke",
+      "number": "74",
+      "name": "S.Pellegrino Mineralwasser 0,5l",
+      "description": "Italienisches Mineralwasser mit Kohlensäure (Glasflasche)",
+      "basePrice": 3.20,
+      "vatRate": 19,
+      "allergens": [],
+      "isSoldOut": false,
+      "order": 3,
+      "sizes": [],
+      "extraGroups": []
+    },
+    {
+      "id": "item_birra_moretti",
+      "categoryId": "cat_getraenke",
+      "number": "78",
+      "name": "Birra Moretti L'Autentica 0,33l",
+      "description": "Klassisches italienisches Lagerbier (4,6% Vol.)",
+      "basePrice": 3.60,
+      "vatRate": 19,
+      "allergens": ["A"],
+      "isSoldOut": false,
+      "order": 4,
+      "sizes": [],
+      "extraGroups": []
+    },
+    {
+      "id": "item_primitivo",
+      "categoryId": "cat_getraenke",
+      "number": "85",
+      "name": "Primitivo di Manduria DOC 0,75l",
+      "description": "Vollmundiger, samtig-würziger Rotwein aus Apulien (14% Vol.)",
+      "basePrice": 16.50,
+      "vatRate": 19,
+      "allergens": [],
+      "isSoldOut": false,
+      "order": 5,
+      "sizes": [],
+      "extraGroups": []
+    }
+  ]
+}
