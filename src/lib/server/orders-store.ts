@@ -1,5 +1,5 @@
 import { Order } from "../../types/restaurant";
-import { supabase, isSupabaseConfigured } from "../supabase/client";
+import { supabaseAdmin, isSupabaseConfigured } from "../supabase/client";
 
 // Globaler In-Memory Cache für Serverless/Dev & Idempotenz
 const ordersMemoryStore = new Map<string, Order>();
@@ -34,9 +34,9 @@ export async function persistOrder(
   }
 
   // Falls Supabase konfiguriert ist, in PostgreSQL persistieren
-  if (isSupabaseConfigured && supabase) {
+  if (isSupabaseConfigured && supabaseAdmin) {
     try {
-      const { error: orderError } = await supabase.from("orders").insert({
+      const { error: orderError } = await supabaseAdmin.from("orders").insert({
         id: order.id,
         restaurant_id: order.restaurantId,
         order_number: order.orderNumber,
@@ -68,7 +68,7 @@ export async function persistOrder(
           comment: it.comment || null,
         }));
 
-        await supabase.from("order_items").insert(itemsToInsert);
+        await supabaseAdmin.from("order_items").insert(itemsToInsert);
       }
     } catch (e) {
       console.warn("Konnte Bestellung nicht in Supabase persistieren (Memory-Fallback aktiv):", e);
@@ -86,9 +86,9 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
     return ordersMemoryStore.get(orderId)!;
   }
 
-  if (isSupabaseConfigured && supabase) {
+  if (isSupabaseConfigured && supabaseAdmin) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from("orders")
         .select(`*, order_items (*)`)
         .eq("id", orderId)
@@ -184,9 +184,9 @@ function mapSupabaseOrderToOrder(data: any): Order {
  * Gibt alle Bestellungen für ein bestimmtes Restaurant zurück (für Admin)
  */
 export async function getOrdersForRestaurant(restaurantId: string): Promise<Order[]> {
-  if (isSupabaseConfigured && supabase) {
+  if (isSupabaseConfigured && supabaseAdmin) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from("orders")
         .select(`*, order_items (*)`)
         .eq("restaurant_id", restaurantId)
