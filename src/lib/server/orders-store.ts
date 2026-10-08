@@ -140,10 +140,66 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
   return null;
 }
 
+function mapSupabaseOrderToOrder(data: any): Order {
+  return {
+    id: data.id,
+    restaurantId: data.restaurant_id,
+    orderNumber: data.order_number,
+    orderType: data.order_type,
+    customer: data.customer_data,
+    desiredTime: data.desired_time,
+    paymentMethod: data.payment_method,
+    paymentStatus: data.payment_status || "pending",
+    status: data.status,
+    createdAt: data.created_at,
+    calculation: {
+      subtotal: Number(data.subtotal),
+      deliveryFee: Number(data.delivery_fee),
+      total: Number(data.total),
+      vat7: Number(data.vat_7),
+      vat19: Number(data.vat_19),
+      foodNet: 0,
+      drinkOrDeliveryNet: 0,
+      isMinOrderReached: true,
+      minOrderDelta: 0,
+      minOrderRequired: 0,
+    },
+    items: (data.order_items || []).map((oi: any) => ({
+      cartLineId: oi.id,
+      itemId: "",
+      number: "",
+      name: oi.item_name,
+      selectedSize: oi.size_name ? { id: "", name: oi.size_name, price: 0 } : undefined,
+      selectedExtras: oi.extras || [],
+      comment: oi.comment,
+      unitPrice: Number(oi.unit_price),
+      quantity: oi.quantity,
+      vatRate: oi.vat_rate,
+      totalPrice: Number(oi.total_price),
+    })),
+  };
+}
+
 /**
  * Gibt alle Bestellungen für ein bestimmtes Restaurant zurück (für Admin)
  */
 export async function getOrdersForRestaurant(restaurantId: string): Promise<Order[]> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from("orders")
+        .select(`*, order_items (*)`)
+        .eq("restaurant_id", restaurantId)
+        .order("created_at", { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        return data.map(mapSupabaseOrderToOrder);
+      }
+    } catch (e) {
+      console.warn("Supabase getOrdersForRestaurant error:", e);
+    }
+  }
+
   const allOrders = Array.from(ordersMemoryStore.values());
   const result = allOrders.filter((o) => o.restaurantId === restaurantId);
   return result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
