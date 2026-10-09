@@ -185,5 +185,37 @@ Wert1,Wert2`;
         expect(result.verifiedOrder.calculation.isMinOrderReached).toBe(true);
       }
     });
+
+    it("legt Inhaber mit selbst gewähltem Passwort an und authentifiziert diesen sicher", async () => {
+      const { createAdminUser, authenticateAdminUser } = await import("../server/users-store");
+
+      const userEmail = "inhaber.test@neue-pizzeria.de";
+      const customPassword = "meinSicheresPasswort!2026";
+
+      // Benutzer anlegen mit eigenem Passwort
+      const newUser = await createAdminUser({
+        email: userEmail,
+        name: "Francesco Test",
+        password: customPassword,
+        restaurantId: "rest_francesco_01",
+        role: "restaurant_owner",
+      });
+
+      expect(newUser.email).toBe(userEmail);
+      expect(newUser.restaurantId).toBe("rest_francesco_01");
+
+      // Login mit richtigem Passwort
+      const authenticated = await authenticateAdminUser(userEmail, customPassword);
+      expect(authenticated).not.toBeNull();
+      expect(authenticated?.email).toBe(userEmail);
+
+      // Login mit falschem Passwort muss fehlschlagen
+      const failedAuthWrongPass = await authenticateAdminUser(userEmail, "falschesPasswort123");
+      expect(failedAuthWrongPass).toBeNull();
+
+      // Login ohne Passwort muss fehlschlagen
+      const failedAuthNoPass = await authenticateAdminUser(userEmail, "");
+      expect(failedAuthNoPass).toBeNull();
+    });
   });
 });

@@ -19,6 +19,10 @@ import {
   ChefHat,
   ShieldCheck,
   AlertCircle,
+  Lock,
+  Key,
+  Copy,
+  Check,
 } from "lucide-react";
 
 export default function OnboardingPage() {
@@ -27,13 +31,16 @@ export default function OnboardingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [createdResult, setCreatedResult] = useState<any>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [copiedLogin, setCopiedLogin] = useState(false);
 
   // Formular-State
   const [formData, setFormData] = useState({
     name: "Pizzeria & Trattoria Roma",
     tagline: "Traditionelle Steinofen-Pizzen & hausgemachte Pasta",
     ownerName: "Luigi Romano",
-    email: "info@pizzeria-roma-demo.de",
+    email: "luigi@pizzeria-roma-demo.de",
+    password: "",
+    passwordConfirm: "",
     phone: "0221 4455667",
     street: "Friesenplatz 12",
     plz: "50672",
@@ -52,6 +59,43 @@ Getränke;91;Coca-Cola 0,33l;Eiskalte Erfrischung;2.50;19;`,
       { plz: "50823", areaName: "Köln Ehrenfeld", minOrder: 18, deliveryFee: 2.0, estimatedMinutes: 35 },
     ],
   });
+
+  const validateAndNextStep1 = () => {
+    setErrorMessage(null);
+    if (!formData.name.trim()) {
+      setErrorMessage("Bitte gib den Namen des Restaurants ein.");
+      return;
+    }
+    if (!formData.ownerName.trim()) {
+      setErrorMessage("Bitte gib den Namen des Restaurantinhabers ein.");
+      return;
+    }
+    if (!formData.email.trim() || !formData.email.includes("@")) {
+      setErrorMessage("Bitte gib eine gültige E-Mail-Adresse für das Inhaber-Login ein.");
+      return;
+    }
+    if (!formData.password) {
+      setErrorMessage("Bitte vergib ein Passwort für den Inhaber-Zugang.");
+      return;
+    }
+    if (formData.password.length < 6) {
+      setErrorMessage("Das Passwort muss mindestens 6 Zeichen lang sein.");
+      return;
+    }
+    if (formData.password !== formData.passwordConfirm) {
+      setErrorMessage("Die Passwörter stimmen nicht überein. Bitte überprüfe deine Eingabe.");
+      return;
+    }
+    if (!formData.phone.trim()) {
+      setErrorMessage("Bitte gib eine Telefonnummer für das Restaurant ein.");
+      return;
+    }
+    if (!formData.plz.trim() || !formData.city.trim()) {
+      setErrorMessage("Bitte gib PLZ und Stadt des Betriebs an.");
+      return;
+    }
+    setStep(2);
+  };
 
   const addDeliveryZone = () => {
     setFormData((prev) => ({
@@ -164,110 +208,190 @@ Getränke;91;Coca-Cola 0,33l;Eiskalte Erfrischung;2.50;19;`,
           </div>
         )}
 
-        {/* SCHRITT 1: Stammdaten */}
+        {/* SCHRITT 1: Stammdaten & Inhaber-Registrierung */}
         {step === 1 && (
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-soft space-y-5">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-soft space-y-6">
             <div>
-              <h2 className="text-lg font-bold text-stone-900">1. Restaurant Stammdaten</h2>
+              <h2 className="text-lg font-bold text-stone-900">1. Restaurant &amp; Inhaber-Registrierung</h2>
               <p className="text-xs text-stone-500 mt-0.5">
-                Grundlegende Informationen für die Kundenansprache und das rechtliche Impressum.
+                Stammdaten für den Online-Auftritt und persönliche Zugangsdaten für das Küchen- und Inhaber-Dashboard.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">
-                  Name des Restaurants *
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm font-semibold focus:ring-2 focus:ring-orange-500/20 focus:border-orange-600"
-                />
+            {/* Inhaber-Zugang & Registrierung Card */}
+            <div className="p-5 bg-stone-50 rounded-2xl border border-stone-200 space-y-4">
+              <div className="flex items-center gap-2 pb-2 border-b border-stone-200">
+                <ShieldCheck className="w-4 h-4 text-orange-600" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-stone-800">
+                  Inhaber-Zugang &amp; Registrierung (Login)
+                </h3>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">
-                  Slogan / Untertitel
-                </label>
-                <input
-                  type="text"
-                  value={formData.tagline}
-                  onChange={(e) => setFormData({ ...formData, tagline: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-600"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">
-                  E-Mail für Bestellbenachrichtigungen *
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-600"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">
-                  Telefonnummer Restaurant *
-                </label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-600"
-                />
-              </div>
-
-              <div className="sm:col-span-2 grid grid-cols-3 gap-3">
-                <div className="col-span-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
                   <label className="block text-xs font-bold text-stone-700 mb-1">
-                    Straße & Hausnummer
+                    Vor- &amp; Nachname des Inhabers *
                   </label>
                   <input
                     type="text"
-                    value={formData.street}
-                    onChange={(e) => setFormData({ ...formData, street: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-600"
+                    placeholder="z.B. Luigi Romano"
+                    value={formData.ownerName}
+                    onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-600 bg-white"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">PLZ *</label>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">
+                    Login-E-Mail-Adresse *
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="inhaber@restaurant.de"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-600 bg-white"
+                  />
+                  <span className="text-[10px] text-stone-500 mt-1 block">
+                    Dient als Benutzername für das Admin- und Küchen-Dashboard.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">
+                    Passwort vergeben *
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Mindestens 6 Zeichen"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-600 bg-white"
+                  />
+                  {formData.password && formData.password.length < 6 && (
+                    <span className="text-[10px] text-rose-600 mt-1 block font-medium">
+                      Mindestens 6 Zeichen erforderlich.
+                    </span>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">
+                    Passwort bestätigen *
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Passwort wiederholen"
+                    value={formData.passwordConfirm}
+                    onChange={(e) => setFormData({ ...formData, passwordConfirm: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-600 bg-white"
+                  />
+                  {formData.password && formData.passwordConfirm && formData.password !== formData.passwordConfirm && (
+                    <span className="text-[10px] text-rose-600 mt-1 block font-medium">
+                      Passwörter stimmen nicht überein.
+                    </span>
+                  )}
+                  {formData.password && formData.passwordConfirm && formData.password === formData.passwordConfirm && formData.password.length >= 6 && (
+                    <span className="text-[10px] text-emerald-600 mt-1 block font-semibold flex items-center gap-1">
+                      <Check className="w-3 h-3" /> Passwörter stimmen überein
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Restaurant-Stammdaten */}
+            <div>
+              <div className="flex items-center gap-2 pb-2 mb-3 border-b border-stone-200">
+                <Store className="w-4 h-4 text-orange-600" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-stone-800">
+                  Restaurant-Stammdaten &amp; Betrieb
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">
+                    Name des Restaurants *
+                  </label>
                   <input
                     type="text"
-                    value={formData.plz}
-                    onChange={(e) => setFormData({ ...formData, plz: e.target.value })}
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm font-semibold focus:ring-2 focus:ring-orange-500/20 focus:border-orange-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">
+                    Slogan / Untertitel
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.tagline}
+                    onChange={(e) => setFormData({ ...formData, tagline: e.target.value })}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-600"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">Stadt *</label>
-                <input
-                  type="text"
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-600"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">
-                  Branding-Akzentfarbe
-                </label>
-                <div className="flex items-center gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">
+                    Telefonnummer Restaurant *
+                  </label>
                   <input
-                    type="color"
-                    value={formData.accentColor}
-                    onChange={(e) => setFormData({ ...formData, accentColor: e.target.value })}
-                    className="w-10 h-10 rounded-xl cursor-pointer border border-stone-200 p-1"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-600"
                   />
-                  <span className="text-xs font-mono text-stone-500">{formData.accentColor}</span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">
+                    Branding-Akzentfarbe
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={formData.accentColor}
+                      onChange={(e) => setFormData({ ...formData, accentColor: e.target.value })}
+                      className="w-10 h-10 rounded-xl cursor-pointer border border-stone-200 p-1"
+                    />
+                    <span className="text-xs font-mono text-stone-500">{formData.accentColor}</span>
+                  </div>
+                </div>
+
+                <div className="sm:col-span-2 grid grid-cols-3 gap-3">
+                  <div className="col-span-2">
+                    <label className="block text-xs font-bold text-stone-700 mb-1">
+                      Straße &amp; Hausnummer
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.street}
+                      onChange={(e) => setFormData({ ...formData, street: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 mb-1">PLZ *</label>
+                    <input
+                      type="text"
+                      value={formData.plz}
+                      onChange={(e) => setFormData({ ...formData, plz: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-600"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Stadt *</label>
+                  <input
+                    type="text"
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-600"
+                  />
                 </div>
               </div>
             </div>
@@ -275,7 +399,7 @@ Getränke;91;Coca-Cola 0,33l;Eiskalte Erfrischung;2.50;19;`,
             <div className="pt-4 flex justify-end">
               <button
                 type="button"
-                onClick={() => setStep(2)}
+                onClick={validateAndNextStep1}
                 className="bg-stone-900 hover:bg-black text-white font-bold py-3 px-6 rounded-xl text-xs flex items-center gap-2 transition cursor-pointer"
               >
                 <span>Weiter zu Liefergebieten</span>
@@ -520,7 +644,7 @@ Getränke;91;Coca-Cola 0,33l;Eiskalte Erfrischung;2.50;19;`,
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 p-4 bg-stone-50 rounded-2xl border border-stone-200 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-stone-50 rounded-2xl border border-stone-200 text-xs">
               <div>
                 <span className="text-stone-400 block font-semibold">Restaurant:</span>
                 <span className="font-bold text-stone-900 text-sm">{formData.name}</span>
@@ -528,9 +652,10 @@ Getränke;91;Coca-Cola 0,33l;Eiskalte Erfrischung;2.50;19;`,
               </div>
 
               <div>
-                <span className="text-stone-400 block font-semibold">Kontakt & Benachrichtigung:</span>
-                <span className="font-bold text-stone-900">{formData.email}</span>
-                <span className="text-stone-500 block">{formData.phone}</span>
+                <span className="text-stone-400 block font-semibold">Inhaber &amp; Login:</span>
+                <span className="font-bold text-stone-900">{formData.ownerName}</span>
+                <span className="text-stone-600 font-mono block">{formData.email}</span>
+                <span className="text-stone-500 block">Passwort: •••••••• (selbst festgelegt)</span>
               </div>
 
               <div>
@@ -608,10 +733,38 @@ Getränke;91;Coca-Cola 0,33l;Eiskalte Erfrischung;2.50;19;`,
                 <span className="font-bold text-stone-800">{createdResult.restaurant?.deliveryZones?.length} PLZ-Zonen</span>
               </div>
               {createdResult.initialLogin && (
-                <div className="pt-2 mt-2 border-t border-stone-200 bg-orange-50/60 p-2.5 rounded-xl space-y-1">
-                  <div className="font-bold text-orange-900 flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-orange-600" />
-                    <span>Inhaber-Login (Sofort einsatzbereit):</span>
+                <div className="pt-2 mt-2 border-t border-stone-200 bg-orange-50/60 p-3 rounded-xl space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <div className="font-bold text-orange-900 flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-orange-600" />
+                      <span>Inhaber-Login (Sofort einsatzbereit):</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const txt = `E-Mail: ${createdResult.initialLogin.email}\nPasswort: ${createdResult.initialLogin.password}`;
+                        navigator.clipboard.writeText(txt);
+                        setCopiedLogin(true);
+                        setTimeout(() => setCopiedLogin(false), 3000);
+                      }}
+                      className="text-[10px] font-bold text-orange-700 bg-white border border-orange-200 hover:bg-orange-100 px-2 py-0.5 rounded-md flex items-center gap-1 cursor-pointer transition"
+                    >
+                      {copiedLogin ? (
+                        <>
+                          <Check className="w-3 h-3 text-emerald-600" />
+                          <span>Kopiert!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3 text-stone-600" />
+                          <span>Kopieren</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <div className="flex justify-between font-mono text-[11px]">
+                    <span className="text-stone-600">Inhaber:</span>
+                    <span className="font-bold text-stone-900">{createdResult.initialLogin.name || formData.ownerName}</span>
                   </div>
                   <div className="flex justify-between font-mono text-[11px]">
                     <span className="text-stone-600">E-Mail:</span>

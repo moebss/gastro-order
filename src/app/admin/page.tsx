@@ -100,14 +100,17 @@ export default function AdminPage() {
   // Ausgewählte Bon-Bestellung für Druck
   const [printOrder, setPrintOrder] = useState<Order | null>(null);
 
+  // Aktive Restaurants (inklusive dynamisch angelegter Mandanten)
+  const [restaurantsList, setRestaurantsList] = useState<Restaurant[]>(ALL_RESTAURANTS);
+
   // Aktives Restaurant
   const currentRestaurant =
-    ALL_RESTAURANTS.find((r) => r.id === currentUser?.restaurantId) ||
-    ALL_RESTAURANTS[0];
+    restaurantsList.find((r) => r.id === currentUser?.restaurantId) ||
+    restaurantsList[0];
 
   const handleSwitchRestaurant = (targetRestaurantId: string) => {
     if (!currentUser) return;
-    const targetRest = ALL_RESTAURANTS.find((r) => r.id === targetRestaurantId);
+    const targetRest = restaurantsList.find((r) => r.id === targetRestaurantId);
     if (targetRest) {
       setCurrentUser({
         email: currentUser.email,
@@ -193,28 +196,88 @@ export default function AdminPage() {
     }
   };
 
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  // Auto-fill Login aus URL Params falls vom Onboarding weitergeleitet
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const emailParam = params.get("email");
+      if (emailParam) {
+        setLoginEmail(emailParam);
+      }
+    }
+  }, []);
+
+  // Dynamische Restaurants von API laden
+  useEffect(() => {
+    fetch("/api/admin/restaurants")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.restaurants) && data.restaurants.length > 0) {
+          setRestaurantsList(data.restaurants);
+        }
+      })
+      .catch((e) => console.warn("Konnte Restaurants nicht aktualisieren:", e));
+  }, []);
+
   // Login Funktion
-  const handleLogin = (e?: React.FormEvent) => {
+  const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setLoginError(null);
+    setIsLoggingIn(true);
 
-    if (loginEmail === "bella@bella-napoli.de" || loginEmail === "bella") {
-      setCurrentUser({
-        email: "bella@bella-napoli.de",
-        restaurantId: "rest_bella_napoli_01",
+    try {
+      const res = await fetch("/api/admin/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: loginEmail,
+          password: loginPassword,
+        }),
       });
-    } else if (loginEmail === "napoli@pizzeria-napoli-horrem.de" || loginEmail === "napoli" || loginEmail === "horrem") {
-      setCurrentUser({
-        email: "info@pizzeria-napoli-horrem.de",
-        restaurantId: "rest_napoli_horrem_03",
-      });
-    } else if (loginEmail === "wok@golden-wok.de" || loginEmail === "wok") {
-      setCurrentUser({
-        email: "wok@golden-wok.de",
-        restaurantId: "rest_golden_wok_02",
-      });
-    } else {
-      setLoginError("Ungültige Zugangsdaten. Bitte nutze die Schnell-Logins.");
+
+      const data = await res.json();
+      if (res.ok && data.success && data.user) {
+        if (data.restaurant) {
+          setRestaurantsList((prev) => {
+            if (prev.some((r) => r.id === data.restaurant.id)) return prev;
+            return [...prev, data.restaurant];
+          });
+        }
+        setCurrentUser({
+          email: data.user.email,
+          restaurantId: data.user.restaurantId,
+        });
+      } else {
+        // Schnelle Fallback-Logins für Demo-Shortcuts
+        if (loginEmail === "bella@bella-napoli.de" || loginEmail === "bella") {
+          setCurrentUser({
+            email: "bella@bella-napoli.de",
+            restaurantId: "rest_bella_napoli_01",
+          });
+        } else if (
+          loginEmail === "napoli@pizzeria-napoli-horrem.de" ||
+          loginEmail === "napoli" ||
+          loginEmail === "horrem"
+        ) {
+          setCurrentUser({
+            email: "info@pizzeria-napoli-horrem.de",
+            restaurantId: "rest_napoli_horrem_03",
+          });
+        } else if (loginEmail === "wok@golden-wok.de" || loginEmail === "wok") {
+          setCurrentUser({
+            email: "wok@golden-wok.de",
+            restaurantId: "rest_golden_wok_02",
+          });
+        } else {
+          setLoginError(data.error || "Ungültige Zugangsdaten. Bitte prüfe E-Mail und Passwort.");
+        }
+      }
+    } catch (e: any) {
+      setLoginError(e.message || "Netzwerkfehler beim Anmelden.");
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -623,9 +686,10 @@ export default function AdminPage() {
 
               <button
                 type="submit"
-                className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-orange-600/30 transition-all text-sm cursor-pointer"
+                disabled={isLoggingIn}
+                className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-orange-600/30 transition-all text-sm cursor-pointer"
               >
-                Anmelden
+                {isLoggingIn ? "Wird angemeldet..." : "Anmelden"}
               </button>
             </form>
 
@@ -738,7 +802,7 @@ export default function AdminPage() {
                     className="font-black text-sm sm:text-base bg-stone-800 hover:bg-stone-700 text-white border border-stone-700 rounded-lg px-2.5 py-1 pr-7 focus:outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer appearance-none transition"
                     title="Zwischen Restaurants wechseln"
                   >
-                    {ALL_RESTAURANTS.map((r) => (
+                    {restaurantsList.map((r) => (
                       <option key={r.id} value={r.id} className="bg-stone-900 text-white">
                         {r.logo} {r.name}
                       </option>
@@ -2126,75 +2190,113 @@ export default function AdminPage() {
             {/* Bon Inhalt */}
             <div id="printable-receipt" className="my-4 p-4 bg-stone-50 rounded-xl border border-stone-300 font-mono text-xs leading-tight text-stone-900">
               <div className="text-center pb-2 border-b border-dashed border-stone-400">
-                <p className="font-bold uppercase text-sm">{currentRestaurant.name}</p>
-                <p>BON #{printOrder.orderNumber}</p>
-                <p>{new Date(printOrder.createdAt).toLocaleString("de-DE")}</p>
+                <p className="font-bold uppercase text-sm tracking-wide">{currentRestaurant.name}</p>
+                <p className="text-[10px] text-stone-600">{currentRestaurant.address.street}, {currentRestaurant.address.plz} {currentRestaurant.address.city}</p>
+                <p className="text-[10px] text-stone-600">Tel: {currentRestaurant.phone}</p>
+                <div className="mt-1 pt-1 border-t border-dotted border-stone-300">
+                  <p className="font-extrabold text-base">BELEG #{printOrder.orderNumber}</p>
+                  <p className="text-[10px] text-stone-500">{new Date(printOrder.createdAt).toLocaleString("de-DE")}</p>
+                </div>
               </div>
 
               <div className="py-2 border-b border-dashed border-stone-400">
-                <p className="font-bold uppercase">
+                <p className="font-bold uppercase text-center bg-stone-200/80 py-0.5 rounded">
                   {printOrder.orderType === "delivery"
                     ? ">>> LIEFERUNG <<<"
-                    : ">>> ABHOLUNG <<<"}
+                    : ">>> SELBSTABHOLUNG <<<"}
                 </p>
-                <p>Kunde: {printOrder.customer.name}</p>
-                <p>Tel: {printOrder.customer.phone}</p>
+                <p className="mt-1.5"><span className="text-stone-500">Kunde:</span> {printOrder.customer.name}</p>
+                <p><span className="text-stone-500">Telefon:</span> {printOrder.customer.phone}</p>
                 {printOrder.orderType === "delivery" && (
-                  <p>
-                    Adresse: {printOrder.customer.street}{" "}
-                    {printOrder.customer.houseNumber}, {printOrder.customer.plz}{" "}
+                  <p className="font-semibold">
+                    <span className="text-stone-500 font-normal">Adresse:</span> {printOrder.customer.street}{" "}
+                    {printOrder.customer.houseNumber || ""}, {printOrder.customer.plz}{" "}
                     {printOrder.customer.city}
                   </p>
                 )}
                 {printOrder.customer.comment && (
-                  <p className="font-bold">Hinweis: {printOrder.customer.comment}</p>
+                  <p className="font-bold text-amber-900 mt-0.5 bg-amber-50 p-1 rounded">
+                    Hinweis: {printOrder.customer.comment}
+                  </p>
                 )}
               </div>
 
-              <div className="py-2 border-b border-dashed border-stone-400 space-y-1">
+              <div className="py-2 border-b border-dashed border-stone-400 space-y-1.5">
+                <div className="flex justify-between text-[10px] text-stone-500 font-bold border-b border-stone-200 pb-0.5">
+                  <span>ARTIKEL</span>
+                  <span>PREIS</span>
+                </div>
                 {printOrder.items.map((it, idx) => (
                   <div key={idx}>
                     <div className="flex justify-between font-bold">
                       <span>
-                        {it.quantity}x #{it.number} {it.name}
+                        {it.quantity}x {it.name}
                       </span>
                       <span>{formatEuro(it.totalPrice)}</span>
                     </div>
                     {it.selectedSize && (
-                      <div className="text-[10px] pl-2">{it.selectedSize.name}</div>
+                      <div className="text-[10px] pl-2 text-stone-600">{it.selectedSize.name}</div>
                     )}
                     {it.selectedExtras.map((e, ei) => (
-                      <div key={ei} className="text-[10px] pl-2">
+                      <div key={ei} className="text-[10px] pl-2 text-stone-600">
                         + {e.name}
                       </div>
                     ))}
                     {it.comment && (
-                      <div className="text-[10px] pl-2 italic">** {it.comment} **</div>
+                      <div className="text-[10px] pl-2 italic text-stone-500">** {it.comment} **</div>
                     )}
                   </div>
                 ))}
+                {printOrder.orderType === "delivery" && printOrder.calculation.deliveryFee > 0 && (
+                  <div className="flex justify-between text-xs pt-1 border-t border-stone-200">
+                    <span>Liefergebühr</span>
+                    <span>{formatEuro(printOrder.calculation.deliveryFee)}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="py-2 space-y-0.5">
-                <div className="flex justify-between font-bold text-sm">
-                  <span>GESAMTSUMME:</span>
+              {/* Steuergitter & Endbetrag */}
+              <div className="py-2 space-y-1">
+                <div className="flex justify-between font-black text-sm pt-0.5">
+                  <span>GESAMTBETRAG (BRUTTO):</span>
                   <span>{formatEuro(printOrder.calculation.total)}</span>
                 </div>
-                <div className="flex justify-between text-[10px]">
-                  <span>enthaltene 7% MwSt.:</span>
-                  <span>{formatEuro(printOrder.calculation.vat7)}</span>
+
+                <div className="pt-1.5 border-t border-stone-200 text-[10px] space-y-0.5">
+                  <div className="flex justify-between text-stone-600">
+                    <span>Speisen Netto (7%):</span>
+                    <span>{formatEuro(printOrder.calculation.foodNet || Math.max(0, (printOrder.calculation.subtotal || 0) - (printOrder.calculation.vat7 || 0)))}</span>
+                  </div>
+                  <div className="flex justify-between text-stone-600">
+                    <span>enthaltene 7% MwSt.:</span>
+                    <span>{formatEuro(printOrder.calculation.vat7)}</span>
+                  </div>
+                  {printOrder.calculation.vat19 > 0 && (
+                    <>
+                      <div className="flex justify-between text-stone-600">
+                        <span>Getränke/Lieferung Netto (19%):</span>
+                        <span>{formatEuro(printOrder.calculation.drinkOrDeliveryNet || Math.max(0, ((printOrder.calculation.total || 0) - (printOrder.calculation.subtotal || 0) + (printOrder.calculation.vat19 > 0 ? printOrder.calculation.vat19 / 0.19 : 0)) - printOrder.calculation.vat19))}</span>
+                      </div>
+                      <div className="flex justify-between text-stone-600">
+                        <span>enthaltene 19% MwSt.:</span>
+                        <span>{formatEuro(printOrder.calculation.vat19)}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
-                <div className="flex justify-between text-[10px]">
-                  <span>enthaltene 19% MwSt.:</span>
-                  <span>{formatEuro(printOrder.calculation.vat19)}</span>
-                </div>
-                <div className="pt-1 font-bold">
-                  <span>
-                    Zahlart:{" "}
+
+                <div className="pt-1.5 border-t border-dashed border-stone-300 font-bold flex justify-between items-center text-xs">
+                  <span>ZAHLUNGSART:</span>
+                  <span className={printOrder.paymentMethod === "cash" ? "text-amber-700" : "text-emerald-700"}>
                     {printOrder.paymentMethod === "cash"
-                      ? "BARZAHLUNG"
-                      : "ONLINE BEZAHLT"}
+                      ? "BARZAHLUNG BEI ÜBERGABE"
+                      : "ONLINE BEZAHLT (MOLLIE)"}
                   </span>
+                </div>
+
+                <div className="pt-2 text-[9px] text-stone-400 text-center leading-normal border-t border-dotted border-stone-300">
+                  <p>Bestellnachweis &amp; Bewirtungsbeleg</p>
+                  <p>Keine Kassenquittung nach KassenSichV (TSE-Kasseneintrag erforderlich bei Barzahlung)</p>
                 </div>
               </div>
             </div>

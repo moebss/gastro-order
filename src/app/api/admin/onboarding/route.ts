@@ -4,6 +4,7 @@ import { ALL_RESTAURANTS } from "../../../../data/restaurants";
 import { ONBOARDING_TEMPLATES } from "../../../../lib/server/onboarding-templates";
 import { parseMenuCsv } from "../../../../lib/server/csv-menu-parser";
 import { createAdminUser } from "../../../../lib/server/users-store";
+import { supabaseAdmin, isSupabaseConfigured } from "../../../../lib/supabase/client";
 
 export interface OnboardRestaurantPayload {
   name: string;
@@ -11,6 +12,7 @@ export interface OnboardRestaurantPayload {
   slug?: string;
   ownerName?: string;
   email: string;
+  password?: string;
   phone: string;
   street: string;
   plz: string;
@@ -157,9 +159,27 @@ export async function POST(req: NextRequest) {
         ONBOARDING_TEMPLATES.find((t) => t.id === body.templateId) ||
         ONBOARDING_TEMPLATES[0];
 
-      categories = selectedTemplate.categories;
-      items = selectedTemplate.items;
+      // Jedes Restaurant erhält isolierte, eindeutige IDs für Kategorien und Gerichte
+      const catIdMap = new Map<string, string>();
+      categories = selectedTemplate.categories.map((c, i) => {
+        const uniqueCatId = `cat_${restaurantId}_${i + 1}`;
+        catIdMap.set(c.id, uniqueCatId);
+        return {
+          ...c,
+          id: uniqueCatId,
+          restaurantId,
+        };
+      });
+
+      items = selectedTemplate.items.map((it, i) => ({
+        ...it,
+        id: `item_${restaurantId}_${i + 1}`,
+        categoryId: catIdMap.get(it.categoryId) || categories[0]?.id,
+        restaurantId,
+      }));
     }
+
+    const orderPrefix = (slug.split("-")[0] || "RES").toUpperCase().slice(0, 3);
 
     const deliveryZones: DeliveryZone[] = body.deliveryZones.map((z) => ({
       plz: z.plz.trim(),
@@ -194,15 +214,86 @@ export async function POST(req: NextRequest) {
     // Im laufenden System registrieren
     ALL_RESTAURANTS.push(newRestaurant);
 
-    // Automatisch Inhaber-Login für das neue Restaurant erstellen
-    const initialPassword = `gastro${Math.floor(100 + Math.random() * 900)}`;
+    // In Supabase PostgreSQL spiegeln
+    if (isSupabaseConfigured && supabaseAdmin) {
+      try {
+        await supabaseAdmin.from("restaurants").upsert({
+          id: newRestaurant.id,
+          name: newRestaurant.name,
+          slug: newRestaurant.slug,
+          order_prefix: orderPrefix,
+          tagline: newRestaurant.tagline,
+          street: newRestaurant.address.street,
+          plz: newRestaurant.address.plz,
+          city: newRestaurant.address.city,
+          phone: newRestaurant.phone,
+          email: newRestaurant.email,
+          logo: newRestaurant.logo,
+          hero_image: newRestaurant.heroImage,
+          accent_color: newRestaurant.accentColor,
+          active: newRestaurant.active,
+        });
+
+        if (newRestaurant.deliveryZones && newRestaurant.deliveryZones.length > 0) {
+          const zonesToInsert = newRestaurant.deliveryZones.map((z, idx) => ({
+            id: `zone_${newRestaurant.id}_${idx}_${Date.now()}`,
+            restaurant_id: newRestaurant.id,
+            plz: z.plz,
+            area_name: z.areaName || z.plz,
+            min_order: z.minOrder,
+            delivery_fee: z.deliveryFee,
+            estimated_minutes: z.estimatedMinutes || 30,
+          }));
+          await supabaseAdmin.from("delivery_zones").insert(zonesToInsert);
+        }
+
+        if (categories && categories.length > 0) {
+          const catsToInsert = categories.map((c) => ({
+            id: c.id,
+            restaurant_id: newRestaurant.id,
+            name: c.name,
+            description: c.description || "",
+            sort_order: c.order || 0,
+            active: true,
+          }));
+          await supabaseAdmin.from("categories").upsert(catsToInsert);
+        }
+
+        if (items && items.length > 0) {
+          const itemsToInsert = items.map((it) => ({
+            id: it.id,
+            restaurant_id: newRestaurant.id,
+            category_id: it.categoryId,
+            number: it.number || "",
+            name: it.name,
+            description: it.description || "",
+            base_price: it.basePrice,
+            vat_rate: it.vatRate || 7,
+            allergens: it.allergens || [],
+            is_sold_out: false,
+            sort_order: it.order || 0,
+          }));
+          await supabaseAdmin.from("items").upsert(itemsToInsert);
+        }
+      } catch (dbErr) {
+        console.warn("Supabase onboarding sync notice:", dbErr);
+      }
+    }
+
+    // Inhaber-Login für das neue Restaurant erstellen mit gewähltem Passwort
+    const userPassword =
+      body.password && body.password.trim().length >= 6
+        ? body.password.trim()
+        : `gastro${Math.floor(100 + Math.random() * 900)}`;
+    const ownerName = body.ownerName?.trim() || `${body.name} Inhaber`;
+
     try {
       await createAdminUser({
         email: body.email.trim(),
-        name: body.ownerName?.trim() || `${body.name} Inhaber`,
+        name: ownerName,
         restaurantId: newRestaurant.id,
         role: "restaurant_owner",
-        password: initialPassword,
+        password: userPassword,
       });
     } catch (userErr) {
       console.warn("User konnte nicht automatisch erstellt werden:", userErr);
@@ -213,10 +304,11 @@ export async function POST(req: NextRequest) {
         success: true,
         restaurant: newRestaurant,
         liveUrl: `/r/${newRestaurant.slug}`,
-        adminUrl: `/admin?restaurantId=${newRestaurant.id}`,
+        adminUrl: `/admin?restaurantId=${newRestaurant.id}&email=${encodeURIComponent(body.email.trim())}`,
         initialLogin: {
+          name: ownerName,
           email: body.email.trim(),
-          password: initialPassword,
+          password: userPassword,
           role: "restaurant_owner",
         },
         message: `Restaurant „${newRestaurant.name}“ erfolgreich angelegt und online!`,

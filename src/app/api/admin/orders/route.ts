@@ -10,6 +10,8 @@ import {
 } from "../../../../lib/server/order-status-machine";
 import { ALL_RESTAURANTS } from "../../../../data/restaurants";
 import { Order } from "../../../../types/restaurant";
+import { getAdminSession } from "@/lib/server/auth-session";
+import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 
 // Vorbelegte Demo-Bestellungen für den Admin-Bereich
 let seededAdminOrders = false;
@@ -303,10 +305,19 @@ function seedInitialAdminOrders() {
 export async function GET(req: NextRequest) {
   seedInitialAdminOrders();
 
+  const session = getAdminSession(req);
   const { searchParams } = new URL(req.url);
-  const restaurantId = searchParams.get("restaurantId") || "rest_bella_napoli_01";
+  const requestedRestaurantId = searchParams.get("restaurantId") || (session?.restaurantId !== "all" ? session?.restaurantId : undefined) || "rest_bella_napoli_01";
 
-  const allOrders = await getOrdersForRestaurant(restaurantId);
+  // Mandantenschutz: Ein angemeldeter Inhaber darf ausschließlich sein Restaurant sehen
+  if (session && !session.isPlatformAdmin && session.restaurantId !== requestedRestaurantId) {
+    return NextResponse.json(
+      { success: false, error: "Zugriff verweigert: Unzulässige Restaurant-ID für diesen Benutzer." },
+      { status: 403 }
+    );
+  }
+
+  const allOrders = await getOrdersForRestaurant(requestedRestaurantId);
   // Erst nach bestätigter Zahlung (oder bei Barzahlung) erscheint die Bestellung in der Küche
   const visibleOrders = allOrders.filter(
     (o) => o.paymentMethod === "cash" || o.paymentStatus === "paid"
@@ -316,6 +327,7 @@ export async function GET(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
+    const session = getAdminSession(req);
     const body = await req.json();
     const { orderId, newStatus, restaurantId } = body;
 
@@ -323,6 +335,14 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json(
         { success: false, error: "Fehlende Parameter (orderId, newStatus, restaurantId)." },
         { status: 400 }
+      );
+    }
+
+    // Session-Berechtigung prüfen falls angemeldet
+    if (session && !session.isPlatformAdmin && session.restaurantId !== restaurantId) {
+      return NextResponse.json(
+        { success: false, error: "Zugriff verweigert: Du darfst nur dein eigenes Restaurant verwalten." },
+        { status: 403 }
       );
     }
 
@@ -359,6 +379,18 @@ export async function PATCH(req: NextRequest) {
     // Status aktualisieren
     order.status = newStatus;
     await persistOrder(order);
+
+    // In Supabase PostgreSQL spiegeln
+    if (isSupabaseConfigured && supabaseAdmin) {
+      try {
+        await supabaseAdmin
+          .from("orders")
+          .update({ status: newStatus })
+          .eq("id", orderId);
+      } catch (dbErr) {
+        console.warn("Supabase order status sync warning:", dbErr);
+      }
+    }
 
     return NextResponse.json({ success: true, order });
   } catch (e: any) {
